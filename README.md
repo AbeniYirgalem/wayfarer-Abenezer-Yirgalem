@@ -29,8 +29,8 @@ Wayfarer follows a **modular monolithic architecture** organized into separate, 
 wayfarer/
 ├── prisma/
 │   ├── schema.prisma           # Prisma 7 database schema (User, Place, Review, TourSlot, Booking)
-│   ├── seed.ts                 # Database seed script (scheduled for Phase 2)
-│   └── migrations/             # Applied database migrations
+│   ├── seed.ts                 # Idempotent database seed script (Addis Ababa, Ethiopia)
+│   └── migrations/             # Applied database migrations & SQL check constraints
 │
 ├── public/
 │   └── images/                 # Static assets and placeholders
@@ -91,7 +91,7 @@ Ensure the following tools are installed on your machine:
 
 - **Node.js**: v20 or v24+
 - **npm**: v10+
-- **Docker & Docker Compose**: Docker Desktop with Compose v2+
+- **Docker & Docker Compose**: Docker Desktop or Docker engine with Compose v2+
 - **Git**
 
 ---
@@ -125,11 +125,13 @@ POSTGRES_PORT=5432
 DATABASE_URL="postgresql://wayfarer:wayfarer_password@localhost:5432/wayfarer?schema=public"
 ```
 
-> **Note**: If your local machine already runs another PostgreSQL service on port `5432`, you can set `POSTGRES_PORT=5433` and update the port in `DATABASE_URL` accordingly (`localhost:5433`).
+> **Note**: If your local machine already runs another PostgreSQL service on port `5432`, set `POSTGRES_PORT=5433` and update the port in `DATABASE_URL` accordingly (`localhost:5433`).
 
 ---
 
-## Database Management
+## Dedicated Database Setup & Management
+
+Follow these exact steps to initialize, migrate, and seed the database:
 
 ### 1. Start PostgreSQL with Docker Compose
 
@@ -139,18 +141,23 @@ Start the PostgreSQL 17 database container with persistent storage and health ch
 docker compose up -d
 ```
 
-Check the health status of the database:
+Verify that the container is healthy:
 
 ```bash
 docker compose ps
 ```
 
-### 2. Run Database Migrations
+### 2. Apply Prisma Migrations
 
-Apply the Prisma migrations to generate the schema:
+Apply the database migrations (including relational indexes, composite unique keys, and PostgreSQL check constraints):
 
 ```bash
-npx prisma migrate dev
+npm run prisma:deploy
+```
+
+*For local interactive migration creation during active development:*
+```bash
+npm run prisma:migrate
 ```
 
 ### 3. Generate Prisma Client
@@ -158,16 +165,94 @@ npx prisma migrate dev
 Generate the type-safe Prisma Client:
 
 ```bash
-npx prisma generate
+npm run prisma:generate
 ```
 
-### 4. (Optional) Launch Prisma Studio
+### 4. Seed the Database
 
-Inspect database records interactively via Prisma Studio:
+Seed the database with sample data for **Addis Ababa, Ethiopia**:
 
 ```bash
-npx prisma studio
+npm run prisma:seed
 ```
+
+> **Idempotency Guarantee**: The seed script uses deterministic UUIDs and `upsert` operations. Running `npm run prisma:seed` multiple times will never create duplicate records or violate database constraints.
+
+### 5. Launch Prisma Studio
+
+Inspect and verify database records interactively via Prisma Studio:
+
+```bash
+npm run prisma:studio
+```
+
+Prisma Studio will open at [http://localhost:5555](http://localhost:5555).
+
+### 6. Verify Database Sample Records
+
+You can verify that all sample records are populated and constraints are intact by running:
+
+```bash
+npx tsx --env-file=.env -e "
+import prisma from './src/lib/prisma';
+async function check() {
+  const [users, places, reviews, slots, bookings] = await Promise.all([
+    prisma.user.count(),
+    prisma.place.count(),
+    prisma.review.count(),
+    prisma.tourSlot.count(),
+    prisma.booking.count(),
+  ]);
+  console.log('Database Status:');
+  console.log({ users, places, reviews, slots, bookings });
+}
+check().then(() => process.exit(0));
+"
+```
+
+Expected output:
+```json
+{ "users": 3, "places": 10, "reviews": 20, "slots": 6, "bookings": 4 }
+```
+
+---
+
+## Seed Data Summary (Addis Ababa, Ethiopia)
+
+### Users (3 Sample Users for Acting-As Switcher)
+1. **Abenezer** (`11111111-1111-4111-8111-111111111111`)
+2. **Hana** (`22222222-2222-4222-8222-222222222222`)
+3. **Dawit** (`33333333-3333-4333-8333-333333333333`)
+
+### Places (10 Places Across All 5 Categories)
+- **HISTORY**: National Museum of Ethiopia, Holy Trinity Cathedral (Kidist Selassie)
+- **FOOD**: 2000 Habesha Cultural Restaurant, Tomoca Coffee (Piazza)
+- **NATURE**: Entoto Natural Park, Unity Park (Grand Palace Complex)
+- **CULTURE**: Ethnological Museum, Red Terror Martyrs' Memorial Museum
+- **ENTERTAINMENT**: Fendika Cultural Centre, Bole Medhane Alem Boulevard
+
+### Reviews (20 Reviews)
+- Every place has at least one review.
+- Most places have 2–3 reviews from multiple seeded users.
+- Places 9 and 10 have 1 review each (satisfying the requirement of places with 1–2 reviews).
+- All ratings are integers between 1 and 5.
+- Composite unique constraint `@@unique([placeId, userId])` prevents duplicate reviews.
+
+### Tour Slots & Bookings (6 Slots, 4 Bookings)
+- All slots have valid future start times (`2027`) and realistic positive capacities (10–25 seats).
+- Sample bookings reference valid users and slots with positive seats.
+- Total booked seats never exceed slot capacities.
+- Composite unique constraint `@@unique([slotId, userId])` prevents duplicate bookings for the same slot.
+
+---
+
+## Database Integrity & Check Constraints
+
+In addition to Prisma foreign key cascades and composite unique constraints, the database enforces PostgreSQL-level `CHECK` constraints:
+- `check_review_rating_range`: `rating >= 1 AND rating <= 5`
+- `check_review_body_not_empty`: `char_length(trim(body)) > 0 AND char_length(body) <= 500`
+- `check_tour_slot_capacity_positive`: `capacity > 0`
+- `check_booking_seats_positive`: `seats > 0`
 
 ---
 
@@ -181,7 +266,7 @@ Start the Next.js development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) (or the port indicated in your console) to view the application.
+Open [http://localhost:3000](http://localhost:3000) (or the port displayed in your terminal).
 
 ### Running Automated Tests
 
@@ -195,7 +280,7 @@ npm test
 
 ```bash
 # Type check
-npx tsc --noEmit
+npm run typecheck
 
 # Lint check
 npm run lint
@@ -206,15 +291,21 @@ npm run build
 
 ---
 
-## Implementation Status (Phase 1)
+## Implementation Status
 
-- [x] Next.js App Router with TypeScript & Tailwind CSS initialized
-- [x] PostgreSQL 17 configured in Docker Compose with health check and persistent volumes
-- [x] Prisma 7 configured with `@prisma/adapter-pg` and `prisma.config.ts`
-- [x] Core schema with 5 entities: `User`, `Place`, `Review`, `TourSlot`, `Booking`
-- [x] Database-level integrity: UUID primary keys, composite unique constraints (`[userId, placeId]`, `[userId, tourSlotId]`), indexes
-- [x] Layered architecture scaffolded (`presentation`, `api`, `services`, `data access`, `validation`)
-- [x] Vitest test runner configured and passing
-- [x] Strict TypeScript and ESLint verification passing
-- [ ] Phase 2: Place discovery, categories, reviews, acting-as user switcher, seed data *(Upcoming)*
-- [ ] Phase 3: Tour booking and concurrency control *(Upcoming)*
+- [x] **Phase 1: Project Setup & Architecture**
+  - Next.js App Router with TypeScript & Tailwind CSS
+  - PostgreSQL 17 configured in Docker Compose with health check
+  - Prisma 7 configured with `@prisma/adapter-pg` and `prisma.config.ts`
+  - Vitest test runner, strict TypeScript, and ESLint configured
+- [x] **Phase 2: Database Implementation & Seed Data**
+  - 5 core models (`User`, `Place`, `Review`, `TourSlot`, `Booking`) with `PlaceCategory` enum
+  - Composite unique constraints (`[placeId, userId]`, `[slotId, userId]`) and relational indexes
+  - Database-level PostgreSQL `CHECK` constraints
+  - Idempotent seed script (`prisma/seed.ts`) with 3 users, 10 places in Addis Ababa, 20 reviews, 6 future tour slots, and 4 bookings
+  - Database management npm scripts configured
+- [ ] **Phase 3: Core Features & User Workflows** *(Upcoming)*
+  - Places discovery and category browsing
+  - Reviews submission and honest ranking calculations
+  - Tour slot booking and concurrency control against overbooking
+  - Acting-as user switcher UI

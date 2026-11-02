@@ -83,3 +83,45 @@ Configure `docker-compose.yml` with dynamic port expansion: `"${POSTGRES_PORT:-5
 ### Consequences
 - Works out-of-the-box on clean environments while providing transparent conflict resolution without changing container-internal port configurations.
 
+
+---
+
+## ADR 06: Database-Level CHECK Constraints for Data Integrity
+
+### Context
+Phase 2 mandates strict data integrity:
+- Review ratings must strictly be between 1 and 5.
+- Tour slot capacity must strictly be greater than zero.
+- Booking seats must strictly be greater than zero.
+- Review body must not be empty.
+
+Application-level or Zod-only validation can be bypassed by direct database queries, script executions, or concurrent transactions.
+
+### Decision
+Augment Prisma schema constraints with native PostgreSQL `CHECK` constraints applied via migration SQL:
+- `ALTER TABLE "reviews" ADD CONSTRAINT "check_review_rating_range" CHECK ("rating" >= 1 AND "rating" <= 5);`
+- `ALTER TABLE "reviews" ADD CONSTRAINT "check_review_body_not_empty" CHECK (char_length(trim("body")) > 0 AND char_length("body") <= 500);`
+- `ALTER TABLE "tour_slots" ADD CONSTRAINT "check_tour_slot_capacity_positive" CHECK ("capacity" > 0);`
+- `ALTER TABLE "bookings" ADD CONSTRAINT "check_booking_seats_positive" CHECK ("seats" > 0);`
+
+### Consequences
+- True multi-layered defense: The database engine refuses any malformed row regardless of whether the insertion came from an API handler, seed script, or background job.
+
+---
+
+## ADR 07: Deterministic Idempotent Seeding Architecture
+
+### Context
+Development environments frequently re-run `prisma db seed`. Non-idempotent scripts cause primary key or composite unique key conflicts on subsequent executions or produce unwanted duplicate entities.
+
+### Decision
+- Assign stable, deterministic UUIDs to all seeded users, places, tour slots, reviews, and bookings.
+- Use Prisma `upsert` across all entities:
+  - `User`: keyed on `id`.
+  - `Place`: keyed on `id`.
+  - `TourSlot`: keyed on `id`.
+  - `Review`: keyed on composite unique constraint `placeId_userId`.
+  - `Booking`: keyed on composite unique constraint `slotId_userId`.
+
+### Consequences
+- The seed script is 100% idempotent and can run indefinitely against fresh or populated databases without errors or state degradation.

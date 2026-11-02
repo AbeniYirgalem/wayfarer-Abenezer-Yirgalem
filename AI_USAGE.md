@@ -37,3 +37,14 @@ All generated code was directly compiled, migrated, and verified against a live 
 - `npm test`: 3 passing tests across 2 test files
 - `npm run build`: Production build verified with Turbopack
 
+
+---
+
+## Phase 2 Engineering Log & AI Usage
+
+### Workflow
+1. **Schema Refinement**: Updated Prisma 7 models to introduce `PlaceCategory` enum (`HISTORY`, `FOOD`, `NATURE`, `CULTURE`, `ENTERTAINMENT`), renamed relations (`slotId` in `Booking`, `startsAt` in `TourSlot`, `body` in `Review`), and created composite unique keys (`[placeId, userId]` and `[slotId, userId]`).
+2. **Database Integrity Migration**: Utilized `prisma migrate diff` to construct the SQL migration diff and integrated native PostgreSQL `CHECK` constraints (`check_review_rating_range`, `check_review_body_not_empty`, `check_tour_slot_capacity_positive`, `check_booking_seats_positive`).
+3. **Idempotent Seed Implementation**: Engineered deterministic UUID seeds for Addis Ababa, Ethiopia across 3 users (`Abenezer`, `Hana`, `Dawit`), 10 places, 20 reviews, 6 tour slots, and 4 bookings using Prisma `upsert`.
+4. **Environment Resiliency**: Handled WSL2 background daemon persistence to maintain Docker daemon connectivity during non-interactive CLI executions.
+5. **Quality Verification**: Executed `npx prisma db seed` repeatedly to verify idempotence, tested TypeScript compilation (`npm run typecheck`), ESLint (`npm run lint`), test runner (`npm test`), and Next.js production build (`npm run build`).

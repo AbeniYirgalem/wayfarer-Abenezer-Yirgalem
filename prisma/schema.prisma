@@ -6,88 +6,88 @@ datasource db {
   provider = "postgresql"
 }
 
+enum PlaceCategory {
+  HISTORY
+  FOOD
+  NATURE
+  CULTURE
+  ENTERTAINMENT
+}
+
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
+  id        String   @id @default(uuid())
   name      String
-  avatarUrl String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  reviews   Review[]
-  bookings  Booking[]
+  createdAt DateTime @default(now())
+
+  reviews  Review[]
+  bookings Booking[]
 
   @@map("users")
 }
 
 model Place {
-  id          String     @id @default(uuid())
-  name        String
-  description String
-  city        String
-  category    String
-  address     String?
-  imageUrl    String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  reviews     Review[]
-  tourSlots   TourSlot[]
+  id           String        @id @default(uuid())
+  name         String
+  category     PlaceCategory
+  description  String        @db.Text
+  openingHours String
+  imageUrl     String?
+  address      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  @@index([city])
+  reviews   Review[]
+  tourSlots TourSlot[]
+
   @@index([category])
   @@map("places")
 }
 
 model Review {
   id        String   @id @default(uuid())
-  rating    Int
-  comment   String
-  userId    String
   placeId   String
+  userId    String
+  rating    Int
+  body      String   @db.VarChar(500)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, placeId])
+  @@unique([placeId, userId])
   @@index([placeId])
   @@index([userId])
   @@map("reviews")
 }
 
 model TourSlot {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   placeId   String
-  startTime DateTime
-  endTime   DateTime?
+  startsAt  DateTime
   capacity  Int
-  price     Float?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
 
   place    Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
   bookings Booking[]
 
   @@index([placeId])
-  @@index([startTime])
+  @@index([startsAt])
   @@map("tour_slots")
 }
 
 model Booking {
-  id         String   @id @default(uuid())
-  userId     String
-  tourSlotId String
-  seats      Int
-  status     String   @default("CONFIRMED")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(uuid())
+  slotId    String
+  userId    String
+  seats     Int
+  createdAt DateTime @default(now())
 
+  tourSlot TourSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tourSlot TourSlot @relation(fields: [tourSlotId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, tourSlotId])
+  @@unique([slotId, userId])
+  @@index([slotId])
   @@index([userId])
-  @@index([tourSlotId])
   @@map("bookings")
 }
-

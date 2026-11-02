@@ -1,4 +1,4 @@
-export type { User, Place, Review, TourSlot, Booking } from '@prisma/client';
+export type { User, Place, Review, TourSlot, Booking, PlaceCategory } from '@prisma/client';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -7,9 +7,8 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface TourSlotAvailability {
-  tourSlotId: string;
+  slotId: string;
   totalCapacity: number;
   bookedSeats: number;
   availableSeats: number;
 }
-
