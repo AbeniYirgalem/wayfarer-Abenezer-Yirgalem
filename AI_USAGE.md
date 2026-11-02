@@ -36,3 +36,4 @@ All generated code was directly compiled, migrated, and verified against a live 
 - `npm run lint`: 0 errors
 - `npm test`: 3 passing tests across 2 test files
 - `npm run build`: Production build verified with Turbopack
+

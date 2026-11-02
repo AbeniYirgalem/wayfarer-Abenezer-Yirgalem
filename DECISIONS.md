@@ -82,3 +82,4 @@ Configure `docker-compose.yml` with dynamic port expansion: `"${POSTGRES_PORT:-5
 
 ### Consequences
 - Works out-of-the-box on clean environments while providing transparent conflict resolution without changing container-internal port configurations.
+
