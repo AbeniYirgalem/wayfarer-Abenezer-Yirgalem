@@ -3,6 +3,12 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import config from '../config';
 
+if (!config.databaseUrl) {
+  throw new Error(
+    'DATABASE_URL environment variable is not defined. Please configure DATABASE_URL in your backend/.env file.'
+  );
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   pool: Pool | undefined;
@@ -23,4 +29,3 @@ if (config.nodeEnv !== 'production') {
 }
 
 export default prisma;
-

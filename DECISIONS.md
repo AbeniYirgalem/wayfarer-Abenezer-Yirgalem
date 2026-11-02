@@ -97,3 +97,46 @@ Prisma ORM 7 optimizes database interaction through driver adapters (`@prisma/ad
 - Use `@prisma/adapter-pg` and `pg.Pool` inside `backend/src/lib/prisma.ts`.
 - Manage database migrations via `backend/prisma/migrations`.
 - Run PostgreSQL 17 Alpine via Docker Compose with health checks and persistent volume storage.
+
+---
+
+## ADR 06: Database-Level Constraints for Rating Integrity & Overbooking Prevention
+
+### Context
+Frontend validation alone cannot prevent concurrent race conditions, malicious API payloads, or corrupted states (e.g., ratings outside 1–5, negative capacities, negative seats, empty review texts).
+
+### Decision
+Enforce data integrity at the database engine level in PostgreSQL:
+1. **Composite Unique Constraints**:
+   - `@@unique([placeId, userId])` on `reviews`: Enforces that a user can submit only one review per place.
+   - `@@unique([slotId, userId])` on `bookings`: Enforces that a user cannot submit duplicate bookings for the same tour slot.
+2. **Native SQL CHECK Constraints** (applied via Prisma migration `20261102165500_phase2_schema_and_constraints`):
+   - `check_review_rating_range`: `CHECK ("rating" >= 1 AND "rating" <= 5)`
+   - `check_review_body_not_empty`: `CHECK (char_length(trim("body")) > 0 AND char_length("body") <= 500)`
+   - `check_tour_slot_capacity_positive`: `CHECK ("capacity" > 0)`
+   - `check_booking_seats_positive`: `CHECK ("seats" > 0)`
+
+---
+
+## ADR 07: Dynamic Calculation of Available Seats vs. Stored Counter
+
+### Context
+Storing a mutable counter column like `seatsLeft` on `tour_slots` creates a distributed state synchronization problem and risk of race conditions during concurrent bookings.
+
+### Decision
+Do not store `seatsLeft` in the database. Instead:
+- Store the immutable slot `capacity`.
+- Calculate available seats dynamically as `capacity - SUM(seats)` from confirmed bookings.
+- In Phase 3, atomic transactions or pessimistic locking will guard the check-and-decrement step.
+
+---
+
+## ADR 08: Deterministic and Idempotent Database Seeding
+
+### Context
+Re-running database seeding scripts during development or CI must not corrupt foreign key relations, create duplicate places, or exceed tour slot capacities.
+
+### Decision
+1. Assign deterministic UUIDv4 identifiers across all seeded records (users, places, tour slots, reviews, bookings).
+2. Utilize Prisma `upsert` queries targeting primary keys and composite unique constraints (`[placeId, userId]`, `[slotId, userId]`).
+3. Ensure seed dataset matches realistic Addis Ababa, Ethiopia cultural, historical, nature, food, and entertainment locations.

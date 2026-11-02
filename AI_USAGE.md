@@ -7,7 +7,7 @@ This document details the AI tooling, prompts, code generation workflows, and hu
 ## 1. AI Tooling Employed
 
 - **Assistant**: Antigravity (Google DeepMind Advanced Agentic Coding) powered by Gemini.
-- **Workflow Scope**: Architectural design, monorepo restructuring, Express.js REST API scaffolding, Next.js client initialization, Prisma 7 database decoupling, Docker Compose configuration, and end-to-end verification.
+- **Workflow Scope**: Architectural design, monorepo restructuring, Express.js REST API scaffolding, Next.js client initialization, Prisma 7 database decoupling, Docker Compose configuration, schema modeling, migration authoring, idempotent seed generation, and end-to-end verification.
 
 ---
 
@@ -31,27 +31,54 @@ This document details the AI tooling, prompts, code generation workflows, and hu
 
 ---
 
-## 3. Human & Agent Overrides / Critical Fixes
+## 3. Prompts & Workflow Stages (Phase 2: PostgreSQL, Prisma Schema, Migrations & Seed Data)
+
+### Stage 1: Requirements Analysis & Schema Specification
+- **Prompt**: "Codex Prompt — Phase 2: PostgreSQL, Prisma Schema, Migrations & Seed Data"
+- **Action**: Parsed database models (`User`, `Place`, `Review`, `TourSlot`, `Booking`) with strict composite unique keys (`[placeId, userId]`, `[slotId, userId]`), category enums (`PlaceCategory`), and native PostgreSQL `CHECK` constraints.
+
+### Stage 2: Database Migration Authoring
+- **Generated / Migrated**:
+  - `20261102075204_init/migration.sql`: Core relational tables and foreign keys.
+  - `20261102165500_phase2_schema_and_constraints/migration.sql`: Category enums, composite unique keys, and SQL `CHECK` constraints:
+    - `check_review_rating_range`: `rating >= 1 AND rating <= 5`
+    - `check_review_body_not_empty`: `char_length(trim(body)) > 0 AND char_length(body) <= 500`
+    - `check_tour_slot_capacity_positive`: `capacity > 0`
+    - `check_booking_seats_positive`: `seats > 0`
+
+### Stage 3: Idempotent Seed Implementation
+- **Generated**:
+  - Deterministic seed dataset for Addis Ababa, Ethiopia across 3 users (`Abenezer`, `Hana`, `Dawit`), 10 places across all 5 categories, 20 reviews, 6 future tour slots, and 4 bookings.
+  - Upsert logic targeting primary keys and composite keys so repeat executions (`npm run db:seed`) produce zero duplicates.
+
+### Stage 4: Automated Constraints Test Suite
+- **Generated**:
+  - `backend/tests/constraints.test.ts` exercising database rejection of invalid ratings (0, 6), empty review bodies, negative/zero capacities, zero booking seats, and duplicate submissions.
+
+---
+
+## 4. Human & Agent Overrides / Critical Fixes
 
 1. **Port Conflict Management**:
    - Host machine features an active local Windows PostgreSQL 13 service listening on port 5432.
    - The Docker Compose configuration was designed with port variable expansion (`${POSTGRES_PORT:-5432}:5432`) to allow local port 5433 fallback without modifying container configurations.
 
-2. **Decoupling Data Access**:
-   - Removed all direct Prisma and PostgreSQL dependencies from the frontend application to guarantee zero database queries inside Next.js components.
-   - Standardized frontend communication via typed HTTP calls through `src/lib/api.ts`.
+2. **WSL2 Daemon Persistence**:
+   - WSL2 shut down idle background containers after non-interactive CLI calls. Maintained a persistent background daemon (`wsl sleep infinity`) to guarantee uninterrupted database access.
 
-3. **Prisma 7 Configuration Migration**:
-   - Maintained Prisma 7 compatibility in `backend/prisma.config.ts` using `@prisma/config` and driver adapter `@prisma/adapter-pg`.
+3. **Prisma 7 Driver Adapter Configuration**:
+   - Configured `backend/prisma.config.ts` using `@prisma/config` with dynamic datasource resolution, and connected Prisma Client in `backend/src/lib/prisma.ts` via `@prisma/adapter-pg` and `pg.Pool`.
 
-4. **Preservation of Domain Logic**:
-   - Preserved previously defined business service skeletons (`PlaceService`, `BookingService`, `ReviewService`, `RankingService`) in `backend/src/services/` for subsequent phases without prematurely exposing unfinished REST endpoints.
+4. **Dynamic Capacity Calculation**:
+   - Explicitly excluded mutable `seatsLeft` column from `TourSlot` model, calculating available seats as `capacity - bookedSeats` to avoid race conditions.
 
 ---
 
-## 4. Verification Record
+## 5. Verification Record
 
-- **Docker PostgreSQL**: Running on PostgreSQL 17 container `wayfarer-postgres`.
-- **Backend Health Check**: Verified `GET http://localhost:5000/api/health` returns HTTP 200 with `{"success": true, "message": "Wayfarer API is running"}`.
-- **Frontend Page**: Verified Next.js landing page renders with live backend connectivity testing component.
-- **TypeScript & Linting**: Clean compilation across both `frontend/` and `backend/`.
+- **Docker PostgreSQL 17**: Running `wayfarer-postgres` container.
+- **Database Migrations**: Verified 2 applied migrations via `npx prisma migrate status`.
+- **Database Seeding**: Verified `npm run db:seed` executes idempotently (3 users, 10 places, 20 reviews, 6 tour slots, 4 bookings). Repeat run generated 0 duplicate records.
+- **Vitest Test Suite**: 11 passing tests across 4 test files (`constraints.test.ts`, `health.test.ts`, `ranking.test.ts`, `booking-concurrency.test.ts`).
+- **TypeScript Compilation**: `npm run typecheck` passed with 0 errors in both `backend/` and `frontend/`.
+- **ESLint & Next.js Build**: `npm run lint` and `npm run build` succeeded with 0 errors.

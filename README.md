@@ -7,9 +7,9 @@
 ## 1. Project Overview & Value Proposition
 
 Wayfarer offers travelers an authentic, reliable platform to:
-- **Discover places** across diverse categories (History, Food, Nature, Culture, Entertainment) in an urban landscape.
+- **Discover places** across diverse categories (History, Food, Nature, Culture, Entertainment) in Addis Ababa, Ethiopia.
 - **Read & submit honest reviews** protected against review manipulation, duplicate reviews, and fraudulent rating spikes.
-- **Find and book guided tour slots** with strictly enforced real-time capacity and concurrency control to completely eliminate overbooking.
+- **Find and book guided tour slots** with strictly enforced real-time capacity and database constraints to prevent overbooking.
 
 ---
 
@@ -17,8 +17,8 @@ Wayfarer offers travelers an authentic, reliable platform to:
 
 Wayfarer is engineered as a **strictly decoupled monorepo** consisting of two independent applications:
 1. **Frontend (`frontend/`)**: Next.js (App Router), React 19, TypeScript, and Tailwind CSS. Acts strictly as the client presentation layer with no direct database access.
-2. **Backend (`backend/`)**: Node.js, Express.js, TypeScript REST API. Contains all domain business logic, data access, database constraints, and validation.
-3. **Database**: PostgreSQL 17 managed via Docker Compose (`docker-compose.yml`) and accessed exclusively by the Express backend using Prisma ORM 7.
+2. **Backend (`backend/`)**: Node.js, Express.js, TypeScript REST API. Contains all domain business logic, data access, database constraints, migrations, and seed data.
+3. **Database**: PostgreSQL 17 managed via Docker Compose (`docker-compose.yml`) and accessed exclusively by the Express backend using Prisma ORM 7 (`@prisma/adapter-pg`).
 
 ```text
 wayfarer/
@@ -26,14 +26,16 @@ wayfarer/
 ├── frontend/                     # Next.js App Router presentation layer
 │   ├── src/
 │   │   ├── app/                  # Next.js App Router (layout, page, globals.css)
-│   │   ├── components/           # Reusable UI & layout components (Navbar, Footer, etc.)
+│   │   ├── components/           # Reusable UI & layout components (Navbar, Footer, ApiHealthStatus)
 │   │   ├── lib/
 │   │   │   └── api.ts            # Centralized API client (HTTP fetcher to Express API)
 │   │   └── types/                # Pure TypeScript domain & response interfaces
 │   ├── public/                   # Static assets & icons
-│   ├── .env.example              # Environment configuration template
+│   ├── .env.example              # NEXT_PUBLIC_API_URL=http://localhost:5000/api
 │   ├── package.json              # Frontend dependencies and scripts
-│   └── tsconfig.json             # TypeScript configuration for Next.js
+│   ├── tsconfig.json             # TypeScript configuration for Next.js
+│   ├── eslint.config.mjs         # ESLint configuration
+│   └── next.config.ts            # Next.js configuration
 │
 ├── backend/                      # Express.js REST API service layer
 │   ├── src/
@@ -49,18 +51,25 @@ wayfarer/
 │   │   └── server.ts             # Server entry point (starts on port 5000)
 │   ├── prisma/
 │   │   ├── schema.prisma         # Prisma data models and relations
-│   │   ├── migrations/           # Version-controlled database migrations
-│   │   └── seed.ts               # Database seed scripts
-│   ├── tests/                    # Vitest unit and integration test suite
+│   │   ├── prisma.config.ts      # Prisma 7 configuration file
+│   │   ├── migrations/           # Version-controlled database migrations & CHECK constraints
+│   │   └── seed.ts               # Idempotent database seed script (Addis Ababa dataset)
+│   ├── tests/                    # Vitest test suite (health, constraints, services)
+│   │   ├── health.test.ts        # API health check integration test
+│   │   ├── constraints.test.ts   # Database constraints & integrity verification test
+│   │   ├── booking-concurrency.test.ts
+│   │   └── ranking.test.ts
 │   ├── .env.example              # Backend environment configuration template
 │   ├── package.json              # Backend dependencies and scripts
-│   └── tsconfig.json             # TypeScript configuration for Node.js
+│   ├── tsconfig.json             # TypeScript configuration for Node.js
+│   └── vitest.config.mts         # Vitest test runner configuration
 │
 ├── docker-compose.yml            # PostgreSQL 17 Alpine database container configuration
 ├── .gitignore                    # Monorepo-wide Git ignore rules
+├── package.json                  # Root monorepo convenience scripts
 ├── README.md                     # Comprehensive project documentation
 ├── DECISIONS.md                  # Architectural Decision Records (ADRs)
-└── AI_USAGE.md                   # Transparent log of AI tooling & human modifications
+└── AI_USAGE.md                   # Transparent log of AI tooling & manual modifications
 ```
 
 ---
@@ -118,75 +127,134 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 ---
 
-### Step 2: Start PostgreSQL with Docker Compose
+### Step 2: Database Setup & Operations
 
-Run the database container from the root directory:
+All database management commands should be executed from within the `backend/` directory (or using root convenience scripts), with PostgreSQL running via Docker:
 
+#### 1. Starting PostgreSQL
+From the repository root:
 ```bash
 docker compose up -d
 ```
-
-Verify that the container is healthy:
+Verify the container is healthy:
 ```bash
 docker compose ps
 ```
 
-The database container runs on `postgres:17-alpine`, with data volume `wayfarer_pgdata` and internal health checks.
-
----
-
-### Step 3: Setup & Run Backend
-
-In a dedicated terminal:
-
+#### 2. Installing Backend Dependencies
 ```bash
 cd backend
-
-# Install dependencies
 npm install
-
-# Generate Prisma Client & apply migrations
-npm run prisma:generate
-npm run prisma:migrate
-
-# Start development server (runs tsx on port 5000)
-npm run dev
 ```
 
-Verify the API health check endpoint:
+#### 3. Generating Prisma Client
 ```bash
-curl http://localhost:5000/api/health
+npm run db:generate
+# (or: npx prisma generate)
 ```
 
-Expected response:
-```json
-{
-  "success": true,
-  "message": "Wayfarer API is running"
-}
+#### 4. Applying Database Migrations
+Applies all version-controlled SQL migrations, relational indexes, and native PostgreSQL `CHECK` constraints:
+```bash
+npm run db:migrate
+# (or: npx prisma migrate dev)
+```
+
+#### 5. Running the Seed Script
+Populates the database idempotently with Addis Ababa destinations, users, reviews, tour slots, and sample bookings:
+```bash
+npm run db:seed
+# (or: npx prisma db seed)
+```
+*Note: Running `npm run db:seed` multiple times is safe and will not produce duplicate records.*
+
+#### 6. Opening Prisma Studio
+To inspect and manage records visually:
+```bash
+npm run db:studio
+# (or: npx prisma studio)
+```
+
+#### 7. Running the Backend Server
+```bash
+npm run dev
+# Server starts on http://localhost:5000
+# Health check available at: http://localhost:5000/api/health
 ```
 
 ---
 
-### Step 4: Setup & Run Frontend
+### Step 3: Frontend Setup & Verification
 
 In a separate terminal:
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start Next.js development server
 npm run dev
+# Starts on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the Wayfarer landing page and live backend health check indicator.
+Open [http://localhost:3000](http://localhost:3000) to view the Wayfarer application and verify live communication with the backend.
 
 ---
 
-## 6. Available Scripts
+## 6. Database Schema & Integrity
+
+The database schema is defined in [backend/prisma/schema.prisma](file:///C:/Users/ABENI/Desktop/Wayfarer/backend/prisma/schema.prisma) across five core models:
+
+1. **User (`users`)**:
+   - `id`: UUID primary key
+   - `name`: String
+   - `createdAt`: DateTime
+   - Relations: One user has many reviews and many bookings.
+
+2. **Place (`places`)**:
+   - `id`: UUID primary key
+   - `name`: String
+   - `category`: Enum (`HISTORY`, `FOOD`, `NATURE`, `CULTURE`, `ENTERTAINMENT`)
+   - `description`: Text
+   - `openingHours`: String
+   - `imageUrl`: Optional String
+   - `address`: String
+   - `createdAt`: DateTime, `updatedAt`: DateTime
+   - Relations: One place has many reviews and many tour slots.
+
+3. **Review (`reviews`)**:
+   - `id`: UUID primary key
+   - `placeId`: Foreign key -> `Place.id` (Cascade delete)
+   - `userId`: Foreign key -> `User.id` (Cascade delete)
+   - `rating`: Integer (1 to 5)
+   - `body`: VarChar(500)
+   - `createdAt`: DateTime, `updatedAt`: DateTime
+   - Constraints:
+     - `@@unique([placeId, userId])` prevents duplicate user reviews for the same place.
+     - PostgreSQL CHECK constraint: `rating >= 1 AND rating <= 5`.
+     - PostgreSQL CHECK constraint: `char_length(trim(body)) > 0 AND char_length(body) <= 500`.
+
+4. **TourSlot (`tour_slots`)**:
+   - `id`: UUID primary key
+   - `placeId`: Foreign key -> `Place.id` (Cascade delete)
+   - `startsAt`: DateTime (future slot timestamp)
+   - `capacity`: Integer (positive number of total seats)
+   - `createdAt`: DateTime
+   - Constraints:
+     - PostgreSQL CHECK constraint: `capacity > 0`.
+     - *No redundant `seatsLeft` field is stored; available seats are dynamically computed from `capacity - bookedSeats`.*
+
+5. **Booking (`bookings`)**:
+   - `id`: UUID primary key
+   - `slotId`: Foreign key -> `TourSlot.id` (Cascade delete)
+   - `userId`: Foreign key -> `User.id` (Cascade delete)
+   - `seats`: Integer (positive seats booked)
+   - `createdAt`: DateTime
+   - Constraints:
+     - `@@unique([slotId, userId])` prevents duplicate user bookings for the same tour slot.
+     - PostgreSQL CHECK constraint: `seats > 0`.
+
+---
+
+## 7. Available Scripts
 
 ### Root Monorepo Scripts
 ```bash
@@ -203,15 +271,17 @@ npm run test:backend       # Run Vitest test suite on backend
 - `npm run dev`: Starts Express development server with hot-reloading via `tsx watch`.
 - `npm run build`: Compiles TypeScript to `dist/`.
 - `npm start`: Runs compiled server from `dist/server.js`.
+- `npm run lint`: Runs type/linter checks.
 - `npm run typecheck`: Runs `tsc --noEmit`.
 - `npm test`: Runs Vitest test suite (`backend/tests/`).
-- `npm run prisma:generate`: Generates Prisma Client.
-- `npm run prisma:migrate`: Runs Prisma migration pipeline in development.
-- `npm run prisma:deploy`: Deploys Prisma migrations in production.
-- `npm run prisma:seed`: Seeds database.
+- `npm run db:generate`: Generates Prisma Client.
+- `npm run db:migrate`: Applies Prisma migrations.
+- `npm run db:deploy`: Deploys migrations for production.
+- `npm run db:seed`: Seeds database idempotently.
+- `npm run db:studio`: Opens Prisma Studio GUI.
 
 ### Frontend Scripts (`frontend/`)
-- `npm run dev`: Starts Next.js development server on port 3000.
+- `npm run dev`: Starts Next.js dev server on port 3000.
 - `npm run build`: Builds Next.js for production.
 - `npm start`: Runs Next.js production server.
 - `npm run lint`: Runs ESLint checks.
@@ -219,7 +289,7 @@ npm run test:backend       # Run Vitest test suite on backend
 
 ---
 
-## 7. API Health Check Verification
+## 8. API Health Check Verification
 
 The Express backend provides a standardized health check endpoint:
 
@@ -230,15 +300,5 @@ The Express backend provides a standardized health check endpoint:
   {
     "success": true,
     "message": "Wayfarer API is running"
-  }
-  ```
-- **Error Format** (Centralized Error Middleware):
-  ```json
-  {
-    "success": false,
-    "error": {
-      "message": "Error description",
-      "details": {}
-    }
   }
   ```
