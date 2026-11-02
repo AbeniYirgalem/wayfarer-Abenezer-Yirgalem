@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: wayfarer-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wayfarer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wayfarer_password}
+      POSTGRES_DB: ${POSTGRES_DB:-wayfarer}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - wayfarer_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wayfarer} -d ${POSTGRES_DB:-wayfarer}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  wayfarer_pgdata:
+    driver: local
+
