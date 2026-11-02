@@ -1,50 +1,57 @@
 # AI Usage Record — Wayfarer
 
-This document outlines the tools, workflows, validation processes, and manual engineering decisions made in collaboration with AI coding assistants for **Wayfarer — Honest Ratings, Fair Bookings** (Phase 1).
+This document details the AI tooling, prompts, code generation workflows, and human architectural reviews conducted during the development of **Wayfarer — Honest Ratings, Fair Bookings**.
 
 ---
 
 ## 1. AI Tooling Employed
+
 - **Assistant**: Antigravity (Google DeepMind Advanced Agentic Coding) powered by Gemini.
-- **Scope of Assistance**: Initial project scaffolding, dependency alignment, Prisma 7 configuration, Next.js 16 App Router routing patterns, and automated verification suites.
+- **Workflow Scope**: Architectural design, monorepo restructuring, Express.js REST API scaffolding, Next.js client initialization, Prisma 7 database decoupling, Docker Compose configuration, and end-to-end verification.
 
 ---
 
-## 2. Key Prompts and Workflow Stages
-1. **Requirements Analysis**: Parsed take-home engineering requirements from Rago Software Solutions, identifying specific architectural constraints (modular monolith, Prisma 7 pg adapter, UUID keys, composite unique constraints, acting-as user switcher pattern).
-2. **Scaffolding and Setup**: Created the project structure with Next.js App Router, TypeScript strict mode, and Tailwind CSS.
-3. **Database Architecture**: Designed the 5 core Prisma models (`User`, `Place`, `Review`, `TourSlot`, `Booking`) with strict foreign keys, indexes, and unique constraints.
-4. **Prisma 7 Driver Adapter Integration**: Configured `@prisma/adapter-pg` with `pg.Pool` in `src/lib/prisma.ts` and dynamic database connection resolution in `prisma.config.ts`.
-5. **Quality Verification**: Executed Vitest test runner, TypeScript compiler (`tsc --noEmit`), ESLint, and Next.js production builds.
+## 2. Prompts & Workflow Stages (Phase 1: Project Architecture)
+
+### Stage 1: Requirements Ingestion & Monorepo Planning
+- **Prompt**: "Codex Prompt — Phase 1: Project Architecture (Next.js + Express.js)"
+- **Action**: Parsed full-stack specifications requiring strict separation into `frontend/` (Next.js App Router, Tailwind CSS) and `backend/` (Express.js, TypeScript, REST API, Prisma 7, PostgreSQL).
+
+### Stage 2: Monorepo Restructuring & File Scaffolding
+- **Generated**:
+  - `frontend/`: App Router structure (`layout.tsx`, `page.tsx`, `globals.css`), centralized HTTP client (`api.ts`), type definitions, `package.json`, and Tailwind CSS v4 setup.
+  - `backend/`: Express application setup (`app.ts`, `server.ts`), layered structure (`config/`, `controllers/`, `routes/`, `services/`, `middleware/`, `lib/`, `utils/`, `types/`), Prisma schema and migrations relocation.
+  - Root: Updated `docker-compose.yml`, `.gitignore`, `README.md`, `DECISIONS.md`, and `AI_USAGE.md`.
+
+### Stage 3: API & Error Handling Architecture
+- **Generated**:
+  - `GET /api/health` endpoint returning `{"success": true, "message": "Wayfarer API is running"}`.
+  - Centralized error handler in `backend/src/middleware/errorHandler.ts` supporting `ApiError`, Zod validation errors, and Prisma relational constraints.
+  - Centralized frontend client in `frontend/src/lib/api.ts` with error normalization.
 
 ---
 
 ## 3. Human & Agent Overrides / Critical Fixes
-- **npm Naming Restrictions**: Project directory capitalized as `Wayfarer`. Correctly resolved by initializing package name `wayfarer` in lowercase.
-- **Port Conflict Management**: Detected existing local PostgreSQL 13 service on host port 5432. Implemented dynamic port expansion (`${POSTGRES_PORT:-5432}:5432`) in `docker-compose.yml` and `.env` override to ensure conflict-free database connectivity.
-- **Prisma 7 Schema Breaking Changes**: Handled the Prisma 7 deprecation where `url` is no longer supported in `schema.prisma` datasource blocks. Moved datasource configuration to `prisma.config.ts` with `dotenv/config` and connected via `@prisma/adapter-pg` in the client.
-- **Next.js 16 Partial Prerendering Compatibility**: Turbopack with `cacheComponents: true` flagged static prerendering of dynamic routes lacking parameters. Resolved by adopting Next.js 16's `export const instant = false;` pattern for dynamic place detail routes pending Phase 2 data fetching.
-- **Node & Vitest Peer Dependency Alignment**: Resolved Vitest 5 peer dependency requirements by updating `@types/node` to version 24 matching the local Node v24 runtime.
+
+1. **Port Conflict Management**:
+   - Host machine features an active local Windows PostgreSQL 13 service listening on port 5432.
+   - The Docker Compose configuration was designed with port variable expansion (`${POSTGRES_PORT:-5432}:5432`) to allow local port 5433 fallback without modifying container configurations.
+
+2. **Decoupling Data Access**:
+   - Removed all direct Prisma and PostgreSQL dependencies from the frontend application to guarantee zero database queries inside Next.js components.
+   - Standardized frontend communication via typed HTTP calls through `src/lib/api.ts`.
+
+3. **Prisma 7 Configuration Migration**:
+   - Maintained Prisma 7 compatibility in `backend/prisma.config.ts` using `@prisma/config` and driver adapter `@prisma/adapter-pg`.
+
+4. **Preservation of Domain Logic**:
+   - Preserved previously defined business service skeletons (`PlaceService`, `BookingService`, `ReviewService`, `RankingService`) in `backend/src/services/` for subsequent phases without prematurely exposing unfinished REST endpoints.
 
 ---
 
-## 4. Verification and Integrity
-All generated code was directly compiled, migrated, and verified against a live PostgreSQL 17 database instance:
-- `npx prisma migrate dev --name init`: Success
-- `npx prisma generate`: Success
-- `npx tsc --noEmit`: 0 errors
-- `npm run lint`: 0 errors
-- `npm test`: 3 passing tests across 2 test files
-- `npm run build`: Production build verified with Turbopack
+## 4. Verification Record
 
-
----
-
-## Phase 2 Engineering Log & AI Usage
-
-### Workflow
-1. **Schema Refinement**: Updated Prisma 7 models to introduce `PlaceCategory` enum (`HISTORY`, `FOOD`, `NATURE`, `CULTURE`, `ENTERTAINMENT`), renamed relations (`slotId` in `Booking`, `startsAt` in `TourSlot`, `body` in `Review`), and created composite unique keys (`[placeId, userId]` and `[slotId, userId]`).
-2. **Database Integrity Migration**: Utilized `prisma migrate diff` to construct the SQL migration diff and integrated native PostgreSQL `CHECK` constraints (`check_review_rating_range`, `check_review_body_not_empty`, `check_tour_slot_capacity_positive`, `check_booking_seats_positive`).
-3. **Idempotent Seed Implementation**: Engineered deterministic UUID seeds for Addis Ababa, Ethiopia across 3 users (`Abenezer`, `Hana`, `Dawit`), 10 places, 20 reviews, 6 tour slots, and 4 bookings using Prisma `upsert`.
-4. **Environment Resiliency**: Handled WSL2 background daemon persistence to maintain Docker daemon connectivity during non-interactive CLI executions.
-5. **Quality Verification**: Executed `npx prisma db seed` repeatedly to verify idempotence, tested TypeScript compilation (`npm run typecheck`), ESLint (`npm run lint`), test runner (`npm test`), and Next.js production build (`npm run build`).
+- **Docker PostgreSQL**: Running on PostgreSQL 17 container `wayfarer-postgres`.
+- **Backend Health Check**: Verified `GET http://localhost:5000/api/health` returns HTTP 200 with `{"success": true, "message": "Wayfarer API is running"}`.
+- **Frontend Page**: Verified Next.js landing page renders with live backend connectivity testing component.
+- **TypeScript & Linting**: Clean compilation across both `frontend/` and `backend/`.
