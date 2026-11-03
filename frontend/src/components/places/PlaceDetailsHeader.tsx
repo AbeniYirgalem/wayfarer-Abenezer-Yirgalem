@@ -25,7 +25,7 @@ export function PlaceDetailsHeader({ place }: PlaceDetailsHeaderProps) {
         </Link>
         <span>/</span>
         <Link href="/#explore" className="hover:text-[#163D32] transition-colors">
-          Destinations
+          Explore Places
         </Link>
         <span>/</span>
         <span className="font-semibold text-[#252A27] truncate">{place.name}</span>
@@ -33,7 +33,10 @@ export function PlaceDetailsHeader({ place }: PlaceDetailsHeaderProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
         {/* Destination Editorial Photo */}
-        <div className="lg:col-span-7 relative min-h-[340px] sm:min-h-[420px] lg:min-h-[480px] bg-[#EDE9DF]">
+        <div
+          className="lg:col-span-7 relative min-h-[340px] sm:min-h-[420px] lg:min-h-[480px] max-h-[520px] w-full bg-[#EDE9DF] overflow-hidden"
+          style={{ position: 'relative', overflow: 'hidden' }}
+        >
           {place.imageUrl && !imgError ? (
             <Image
               src={place.imageUrl}
@@ -41,12 +44,12 @@ export function PlaceDetailsHeader({ place }: PlaceDetailsHeaderProps) {
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 60vw"
-              className="object-cover"
+              className="object-cover w-full h-full"
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-[#EDE9DF] text-[#777D78] p-8">
-              <CompassIcon className="w-12 h-12 mb-3 opacity-40" />
+            <div className="w-full h-full min-h-[340px] flex flex-col items-center justify-center bg-[#EDE9DF] text-[#777D78] p-8">
+              <CompassIcon className="w-12 h-12 mb-3 text-[#163D32] opacity-40" />
               <p className="text-sm font-medium">Addis Ababa Landmark</p>
             </div>
           )}

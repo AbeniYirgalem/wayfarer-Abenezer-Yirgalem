@@ -19,7 +19,7 @@ export function HeroSection({
   return (
     <section className="relative min-h-[540px] md:min-h-[620px] flex items-center justify-center overflow-hidden bg-[#163D32]">
       {/* Background Photography with atmospheric overlay */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden" style={{ position: 'absolute', overflow: 'hidden' }}>
         <Image
           src="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=2000&q=80"
           alt="Addis Ababa landmark cathedral"

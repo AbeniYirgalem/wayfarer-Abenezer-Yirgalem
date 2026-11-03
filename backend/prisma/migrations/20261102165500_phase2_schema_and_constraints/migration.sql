@@ -74,4 +74,3 @@ ALTER TABLE "reviews" ADD CONSTRAINT "check_review_rating_range" CHECK ("rating"
 ALTER TABLE "reviews" ADD CONSTRAINT "check_review_body_not_empty" CHECK (char_length(trim("body")) > 0 AND char_length("body") <= 500);
 ALTER TABLE "tour_slots" ADD CONSTRAINT "check_tour_slot_capacity_positive" CHECK ("capacity" > 0);
 ALTER TABLE "bookings" ADD CONSTRAINT "check_booking_seats_positive" CHECK ("seats" > 0);
-

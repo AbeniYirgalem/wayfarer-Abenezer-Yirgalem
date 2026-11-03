@@ -1,5 +1,10 @@
-import 'dotenv/config';
+import path from 'node:path';
+import dotenv from 'dotenv';
 import { defineConfig, env } from '@prisma/config';
+
+// Ensure backend/.env is loaded regardless of current working directory
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config();
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -9,5 +14,6 @@ export default defineConfig({
   },
   datasource: {
     url: env('DATABASE_URL'),
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });

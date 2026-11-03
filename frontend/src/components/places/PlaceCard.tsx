@@ -19,7 +19,11 @@ export function PlaceCard({ place }: PlaceCardProps) {
   return (
     <article className="group bg-white rounded-2xl border border-[#EDE9DF] overflow-hidden shadow-sm hover:shadow-md hover:border-[#D6D2C4] transition-all duration-300 flex flex-col h-full">
       {/* Destination Image Container */}
-      <Link href={`/places/${place.id}`} className="relative block h-56 w-full overflow-hidden bg-[#EDE9DF]">
+      <Link
+        href={`/places/${place.id}`}
+        className="relative block h-56 w-full overflow-hidden bg-[#EDE9DF]"
+        style={{ position: 'relative', overflow: 'hidden' }}
+      >
         {place.imageUrl && !imgError ? (
           <Image
             src={place.imageUrl}

@@ -83,7 +83,8 @@ export class BookingService {
     }
 
     // Execute atomic transaction with pessimistic row-level locking
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(
+      async (tx) => {
       // 1. Verify acting user exists
       const user = await tx.user.findUnique({
         where: { id: userId },
@@ -160,6 +161,10 @@ export class BookingService {
         seats: newBooking.seats,
         remainingSeats,
       };
+    },
+    {
+      maxWait: 10000,
+      timeout: 10000,
     });
   }
 
