@@ -222,3 +222,44 @@ Implement a reusable middleware `validate` in `backend/src/middleware/validate.m
 - Accepts independent Zod schemas for `params`, `query`, `body`, and `headers`.
 - Replaces incoming `req` properties with parsed and sanitized values (e.g., trimming whitespace, transforming strings to integers/enums).
 - Automatically converts Zod validation failures into uniform HTTP `400 Bad Request` responses before controllers are executed.
+
+
+---
+
+## ADR 13: Client-Side Acting User Identity Switcher with LocalStorage Persistence
+
+### Context
+The application does not include traditional authentication/passwords, but requires simulating multiple distinct travelers to test review upserts, user constraints, and overbooking prevention across different user sessions.
+
+### Decision
+Implement a centralized `UserContext` in `frontend/src/context/UserContext.tsx`:
+1. Fetches real users dynamically from `GET /api/users` on application load.
+2. Synchronizes the active user ID with browser `localStorage` under `wayfarer_acting_user_id`.
+3. If a persisted ID matches a valid database user, restores that identity; otherwise defaults to the first available user.
+4. Exposes `currentUser` across the entire application and automatically attaches `X-User-Id: <UUID>` to API calls in `submitReview` and `createBooking`.
+5. If no user is selected, disables review/booking submission forms and presents an accessible warning.
+
+---
+
+## ADR 14: Responsive Editorial Travel Aesthetic & Zero-Dependency SVG Iconography
+
+### Context
+The UI must deliver a polished, editorial travel magazine aesthetic (deep forest green `#163D32`, warm off-white `#F8F7F3`, soft beige `#EDE9DF`, charcoal `#252A27`) with robust typography, accessible interactive controls, and visual feedback without installing external icon runtime libraries.
+
+### Decision
+1. Implement a customized design token system in Tailwind CSS v4 and `globals.css` using the specified brand palette.
+2. Build a dedicated, zero-dependency SVG icon system in `frontend/src/components/ui/Icons.tsx` adhering to Lucide iconography guidelines.
+3. Use Next.js `<Image>` with configured remote patterns for `images.unsplash.com` with graceful fallback handling when remote assets fail.
+
+---
+
+## ADR 15: Debounced Client-Server Search & Real-Time Bayesian Filter Pipeline
+
+### Context
+Filtering places by search term or category must not trigger premature requests on every keystroke, while maintaining exact synchronization with backend Bayesian rating calculations.
+
+### Decision
+1. Implement a 300ms debounce on search queries in `frontend/src/app/page.tsx`.
+2. Send all category, search, and top-rated sorting requests directly to `GET /api/places?category=...&sort=top-rated&search=...`.
+3. Prevent duplicate client-side ranking math; trust the backend's verified Bayesian weighted rating score.
+4. Provide a single-click reset control and dynamic results counter for clear visitor feedback.

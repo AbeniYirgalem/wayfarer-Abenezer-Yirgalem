@@ -6,19 +6,22 @@ export interface User {
   createdAt: string;
 }
 
-export interface Place {
+export interface PlaceListItem {
   id: string;
   name: string;
   category: PlaceCategory;
   description: string;
   openingHours: string;
-  imageUrl?: string | null;
+  imageUrl: string | null;
   address: string;
   createdAt: string;
   updatedAt: string;
+  averageRating: number;
+  reviewCount: number;
+  weightedRating: number;
 }
 
-export interface Review {
+export interface PlaceDetailReview {
   id: string;
   placeId: string;
   userId: string;
@@ -26,36 +29,71 @@ export interface Review {
   body: string;
   createdAt: string;
   updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+  };
 }
 
-export interface TourSlot {
+export interface PlaceDetailTourSlot {
   id: string;
   placeId: string;
   startsAt: string;
   capacity: number;
-  createdAt: string;
+  totalBookedSeats: number;
+  availableSeats: number;
 }
 
-export interface Booking {
+export interface PlaceDetail extends PlaceListItem {
+  reviews: PlaceDetailReview[];
+  tourSlots: PlaceDetailTourSlot[];
+}
+
+export interface ReviewSubmissionResult {
+  isNew: boolean;
+  review: PlaceDetailReview;
+  placeStats: {
+    averageRating: number;
+    reviewCount: number;
+    weightedRating: number;
+  };
+}
+
+export interface TourSlotAvailability {
   id: string;
+  placeId: string;
+  place: {
+    id: string;
+    name: string;
+    address: string;
+    imageUrl: string | null;
+    category: PlaceCategory;
+  };
+  startsAt: string;
+  capacity: number;
+  totalBookedSeats: number;
+  availableSeats: number;
+}
+
+export interface BookingResult {
+  bookingId: string;
   slotId: string;
-  userId: string;
   seats: number;
-  createdAt: string;
+  remainingSeats: number;
 }
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
-  data?: T;
+  data: T;
   error?: {
     message: string;
-    details?: unknown;
+    errors?: string[];
   };
 }
 
-export interface HealthCheckResponse {
-  success: boolean;
-  message: string;
+export interface GetPlacesFilterOptions {
+  category?: PlaceCategory | 'ALL';
+  sort?: 'top-rated';
+  search?: string;
 }
-

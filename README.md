@@ -11,6 +11,7 @@ Wayfarer offers travelers an authentic, reliable platform to:
 - **Experience Honest Rankings**: Powered by a **Bayesian weighted rating algorithm** ($WR = \frac{v}{v+m} R + \frac{m}{v+m} C$) that prevents 1-review outliers from unfairly dominating places with dozens of verified positive reviews.
 - **Fair, Overbooking-Proof Bookings**: Powered by **PostgreSQL pessimistic row-level locking** (`SELECT ... FOR UPDATE`) inside atomic database transactions, guaranteeing that concurrent seat reservations never exceed capacity.
 - **Read & submit verified reviews** protected by database-level composite unique keys (`[placeId, userId]`) and check constraints.
+- **Switch Traveler Identities**: Integrated acting-as user switcher simulating verified traveler personas with persistent client session state.
 
 ---
 
@@ -26,17 +27,37 @@ wayfarer/
 │
 ├── frontend/                     # Next.js App Router presentation layer
 │   ├── src/
-│   │   ├── app/                  # Next.js App Router (layout, page, globals.css)
-│   │   ├── components/           # Reusable UI & layout components (Navbar, Footer, ApiHealthStatus)
+│   │   ├── app/                  # Next.js App Router
+│   │   │   ├── layout.tsx        # Global layout with UserProvider, Navbar, Footer
+│   │   │   ├── page.tsx          # Homepage with Hero, Category tabs, PlaceGrid
+│   │   │   ├── globals.css       # Design tokens & Tailwind theme configuration
+│   │   │   ├── loading.tsx       # Global skeleton loader
+│   │   │   ├── error.tsx         # Global error boundary with retry
+│   │   │   ├── not-found.tsx     # 404 destination uncharted view
+│   │   │   └── places/
+│   │   │       └── [id]/
+│   │   │           └── page.tsx  # Dynamic destination detail, reviews & tour booking
+│   │   │
+│   │   ├── components/
+│   │   │   ├── layout/           # Navbar, Footer, UserSwitcher
+│   │   │   ├── home/             # HeroSection, CategoryFilter, FeaturedPlaces
+│   │   │   ├── places/           # PlaceCard, PlaceGrid, PlaceRating, PlaceDetailsHeader
+│   │   │   ├── reviews/          # ReviewCard, ReviewList, ReviewForm
+│   │   │   ├── tours/            # TourSlotCard, TourSlotList, BookingModal
+│   │   │   └── ui/               # Icons, Button, Input, Skeleton, EmptyState, Toast
+│   │   │
+│   │   ├── context/
+│   │   │   └── UserContext.tsx   # Acting traveler identity state & localStorage sync
 │   │   ├── lib/
-│   │   │   └── api.ts            # Centralized API client (HTTP fetcher to Express API)
-│   │   └── types/                # Pure TypeScript domain & response interfaces
+│   │   │   ├── api.ts            # Centralized typed HTTP API client
+│   │   │   └── utils.ts          # Category metadata, date formatters, cn helper
+│   │   └── types/                # Domain types matching Express backend payloads
 │   ├── public/                   # Static assets & icons
 │   ├── .env.example              # NEXT_PUBLIC_API_URL=http://localhost:5000/api
 │   ├── package.json              # Frontend dependencies and scripts
 │   ├── tsconfig.json             # TypeScript configuration for Next.js
 │   ├── eslint.config.mjs         # ESLint configuration
-│   └── next.config.ts            # Next.js configuration
+│   └── next.config.ts            # Next.js configuration (remote Unsplash images)
 │
 ├── backend/                      # Express.js REST API service layer
 │   ├── src/
@@ -84,7 +105,7 @@ wayfarer/
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4 |
+| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide-style SVG icons |
 | **Backend** | Node.js, Express.js 4/5, TypeScript, REST API |
 | **Database & ORM** | PostgreSQL 17 Alpine, Prisma ORM 7 (`@prisma/adapter-pg`, `pg.Pool`) |
 | **Validation** | Zod |
@@ -93,118 +114,53 @@ wayfarer/
 
 ---
 
-## 4. REST API Specification
+## 4. Frontend Features & User Experience (Phase 4)
+
+### 1. Acting-as User Switcher (`UserSwitcher.tsx`)
+- Located directly in the top navigation bar.
+- Fetches real seeded users from `GET /api/users` (`Abenezer`, `Hana`, `Dawit`).
+- Persists selected user ID in `localStorage` across page navigations and browser refreshes.
+- Attaches the selected user ID as the `X-User-Id` header on all review submissions and tour bookings.
+- Clearly flags unauthenticated actions with warning banners if no user is chosen.
+
+### 2. Editorial Discovery Homepage (`page.tsx`)
+- **Hero Section**: Large travel photography, search input, explore CTA, quick quality badges.
+- **Category Filter Tabs**: All Places, History, Food, Nature, Culture, and Entertainment with active states.
+- **Top-Rated Toggle**: Directly queries `GET /api/places?sort=top-rated` to order places by Bayesian weighted score.
+- **Search Integration**: Debounced search querying `GET /api/places?search=...` against destination titles and descriptions.
+- **Interactive Destination Grid**: Responsive cards with hover image zoom, opening hours, location badges, star visualizations, and honest rank badges.
+
+### 3. Place Details Experience (`/places/[id]`)
+- **Editorial Header**: Image banner, category tags, location metadata, opening hours, and honest rating explainer.
+- **Real-Time Tour Slots & Booking**:
+  - Displays all upcoming departure slots, start time, total capacity, and available seats.
+  - "Reserve Seats" modal with interactive seat counter ($1 \le seats \le available$).
+  - Full capacity protection and clear `409 Conflict` messaging: *"Sorry, those seats are no longer available. Please choose another time or a smaller group."*
+  - Instant background refresh upon successful booking.
+- **Verified Reviews & Form**:
+  - Chronological list of traveler reviews with author names and dates.
+  - Interactive review submission form with 1–5 star selector and 500-character counter.
+  - Transparent upsert behavior: automatically switches between "Publish Review" (for first-time reviewers) and "Update Review" (for repeat reviewers), preventing duplicate records and updating place stats in real time.
+
+---
+
+## 5. REST API Specification
 
 All backend endpoints are mounted under `/api` and return standardized JSON envelopes.
 
-### Standard Response Envelope
-
-**Success (2xx):**
-```json
-{
-  "success": true,
-  "message": "Operation description",
-  "data": { ... }
-}
-```
-
-**Error (4xx / 5xx):**
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Error description",
-    "errors": [ ... ]
-  }
-}
-```
-
-### Endpoints Overview
-
 | Method | Endpoint | Description | Auth / Headers | Key Status Codes |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Health check | None | `200` |
-| `GET` | `/api/users` | List seeded users for switcher | None | `200` |
-| `GET` | `/api/places` | List & filter places with Bayesian rating | Query: `category`, `search`, `sort` | `200`, `400` |
-| `GET` | `/api/places/:id` | Get place details, reviews, tour availability | None | `200`, `400`, `404` |
-| `POST` | `/api/places/:id/reviews` | Submit or update review (upsert) | `X-User-Id: <UUID>` | `201`, `200`, `400`, `404`, `409` |
-| `GET` | `/api/tours/:id/bookings` | Get tour slot capacity & availability | None | `200`, `400`, `404` |
-| `POST` | `/api/tours/:id/bookings` | Concurrency-safe tour seat reservation | `X-User-Id: <UUID>` | `201`, `400`, `404`, `409` |
+| `GET` | `/api/health` | Health check | None | `200 OK` |
+| `GET` | `/api/users` | List seeded users for switcher | None | `200 OK` |
+| `GET` | `/api/places` | List & filter places with Bayesian rating | Query: `category`, `search`, `sort` | `200 OK`, `400 Bad Request` |
+| `GET` | `/api/places/:id` | Get place details, reviews, tour availability | None | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `POST` | `/api/places/:id/reviews` | Submit or update review (upsert) | `X-User-Id: <UUID>` | `201 Created`, `200 OK`, `400`, `404`, `409` |
+| `GET` | `/api/tours/:id/bookings` | Get tour slot capacity & availability | None | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `POST` | `/api/tours/:id/bookings` | Concurrency-safe tour seat reservation | `X-User-Id: <UUID>` | `201 Created`, `400`, `404`, `409 Conflict` |
 
 ---
 
-### Endpoint Details & Curl Examples
-
-#### 1. `GET /api/places`
-Retrieve a list of places with optional filtering, search, and Bayesian ranking:
-- `category`: Filter by `HISTORY`, `FOOD`, `NATURE`, `CULTURE`, or `ENTERTAINMENT`.
-- `search`: Case-insensitive substring search matching place name.
-- `sort`: `top-rated` orders places by Bayesian weighted score descending.
-
-```bash
-# Get top-rated places
-curl -X GET "http://localhost:5000/api/places?sort=top-rated"
-
-# Filter by category and search
-curl -X GET "http://localhost:5000/api/places?category=HISTORY&search=National"
-```
-
-#### 2. `GET /api/places/:id`
-Retrieve full place details including:
-- Dynamic rating stats (`averageRating`, `reviewCount`, `weightedRating`).
-- Chronological list of user reviews with author names.
-- Future tour slots with calculated `availableSeats = capacity - totalBookedSeats`.
-
-```bash
-curl -X GET "http://localhost:5000/api/places/a0000001-0000-4000-8000-000000000001"
-```
-
-#### 3. `POST /api/places/:id/reviews`
-Submit a review acting as a user:
-- Header: `X-User-Id: <UUID>`
-- Body: `{ "rating": 5, "body": "Incredible imperial exhibits!" }`
-- First submission returns `201 Created` (`isNew: true`).
-- Repeat submission by same user updates the review and returns `200 OK` (`isNew: false`).
-
-```bash
-curl -X POST "http://localhost:5000/api/places/a0000001-0000-4000-8000-000000000001/reviews" \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: 11111111-1111-4111-8111-111111111111" \
-  -d '{"rating": 5, "body": "Incredible collection of historical crowns and artifacts!"}'
-```
-
-#### 4. `GET /api/tours/:id/bookings`
-Check real-time tour slot capacity and available seats.
-
-```bash
-curl -X GET "http://localhost:5000/api/tours/b0000001-0000-4000-8000-000000000001/bookings"
-```
-
-#### 5. `POST /api/tours/:id/bookings`
-Book tour seats with PostgreSQL pessimistic row-level locking:
-- Header: `X-User-Id: <UUID>`
-- Body: `{ "seats": 2 }`
-- Returns `201 Created` on success.
-- Returns `409 Conflict` if the tour is full or requested seats exceed availability.
-- Returns `409 Conflict` if the user has already booked this tour slot.
-
-```bash
-curl -X POST "http://localhost:5000/api/tours/b0000001-0000-4000-8000-000000000001/bookings" \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: 22222222-2222-4222-8222-222222222222" \
-  -d '{"seats": 2}'
-```
-
-#### 6. `GET /api/users`
-List seeded users for the client-side acting user switcher:
-
-```bash
-curl -X GET "http://localhost:5000/api/users"
-```
-
----
-
-## 5. Local Setup Instructions
+## 6. Local Setup & Execution Instructions
 
 ### Step 1: Clone Repository & Configure Environment
 
@@ -223,50 +179,42 @@ cp frontend/.env.example frontend/.env.local
 ### Step 2: Database Setup & Operations
 
 ```bash
-# 1. Start PostgreSQL 17 in background
+# 1. Start PostgreSQL 17 in background via Docker
 docker compose up -d
 
-# 2. Install backend dependencies
-cd backend
-npm install
-
-# 3. Generate Prisma client & apply migrations
-npm run db:generate
-npm run db:migrate
-
-# 4. Seed database idempotently
-npm run db:seed
-
-# 5. Start backend development server
-npm run dev
-# Running on http://localhost:5000
+# 2. Run backend migrations and seed data
+npm run db:migrate --prefix backend
+npm run db:seed --prefix backend
 ```
 
-### Step 3: Run Automated Tests
+### Step 3: Run Applications
 
-Execute all 40 automated backend tests (concurrency, Bayesian ranking, reviews, bookings, places, users, constraints, and health):
+In two separate terminals:
 
 ```bash
-# From repository root
+# Terminal 1: Start Express.js Backend (port 5000)
+npm run dev:backend
+
+# Terminal 2: Start Next.js Frontend (port 3000)
+npm run dev:frontend
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the Wayfarer application.
+
+### Step 4: Verification Commands
+
+```bash
+# Verify backend unit & concurrency tests
 npm run test:backend
 
-# Or from backend/
-cd backend
-npm test
-```
+# Verify TypeScript compilation
+npm run typecheck:backend
+npm run typecheck:frontend
 
----
+# Verify ESLint on frontend
+npm run lint:frontend
 
-## 6. Available Scripts
-
-### Root Monorepo Scripts
-```bash
-npm run dev:frontend       # Run Next.js frontend (port 3000)
-npm run dev:backend        # Run Express.js backend (port 5000)
-npm run build:frontend     # Build Next.js frontend
-npm run build:backend      # Build Express backend
-npm run typecheck:frontend # Run TypeScript checks on frontend
-npm run typecheck:backend  # Run TypeScript checks on backend
-npm run test:backend       # Run all Vitest backend test suites
-npm run lint:frontend      # Run ESLint on frontend
+# Verify production builds
+npm run build:backend
+npm run build:frontend
 ```

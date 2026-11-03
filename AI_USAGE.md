@@ -129,3 +129,41 @@ This document details the AI tooling, prompts, code generation workflows, and hu
 - **ESLint**:
   - `npm run lint:frontend` passed with 0 warnings / errors.
 - **Frontend Isolation**: Zero modifications made to `frontend/`. All changes strictly contained in `backend/` and root documentation.
+
+
+---
+
+## 7. Prompts & Workflow Stages (Phase 4: Modern Next.js Frontend Development & API Integration)
+
+### Stage 1: Design Direction & Architectural Planning
+- **Prompt**: "Codex Prompt — Phase 4: Modern Next.js Frontend Development & API Integration"
+- **Action**: Formulated editorial travel magazine aesthetic adhering to brand palette:
+  - Deep forest green: `#163D32` (Primary)
+  - Warm off-white: `#F8F7F3` (Backgrounds)
+  - Soft beige: `#EDE9DF` (Card borders and subtle backgrounds)
+  - Charcoal: `#252A27` (Text headings)
+  - Muted gray: `#777D78` (Metadata and subtext)
+- **Constraint Compliance**:
+  - All changes strictly isolated in `frontend/`.
+  - Zero backend code modifications.
+  - No direct PostgreSQL access or duplicated Next.js API routes.
+  - Zero external icon runtime dependencies (implemented clean Lucide-styled SVG library in `frontend/src/components/ui/Icons.tsx`).
+
+### Stage 2: Component & Layout Implementation
+- **Generated**:
+  - `UserContext.tsx`: Manages acting traveler identity fetched from `GET /api/users` with `localStorage` persistence and automatic `X-User-Id` injection.
+  - `Navbar.tsx` & `Footer.tsx`: Modern navigation with integrated `UserSwitcher` and mobile dropdown.
+  - `HeroSection.tsx`: Editorial photography, headline, and integrated search input.
+  - `CategoryFilter.tsx`: Category selector for all 5 categories with active states.
+  - `FeaturedPlaces.tsx` & `PlaceGrid.tsx`: Integrated search, Bayesian top-rated sort toggle, and responsive cards.
+  - `PlaceCard.tsx` & `PlaceRating.tsx`: Image container with fallback, star ratings, review counts, and honest score badges.
+  - `PlaceDetailsHeader.tsx`: Editorial photography, address, opening hours, and description.
+  - `ReviewList.tsx` & `ReviewForm.tsx`: Interactive review submission and update with 1-5 star selector, 500-char count, and upsert handling.
+  - `TourSlotList.tsx`, `TourSlotCard.tsx` & `BookingModal.tsx`: Real-time tour seat availability, seat quantity picker, overbooking protection, and 409 Conflict handling.
+  - `loading.tsx`, `error.tsx`, `not-found.tsx`: Global states for error resilience.
+
+### Stage 3: Verification & Build
+- **Typecheck**: `npm run typecheck:frontend` passed with 0 errors.
+- **ESLint**: `npm run lint:frontend` passed with 0 errors / warnings (resolved React 19 `set-state-in-effect` and Next.js navigation rules).
+- **Production Build**: `npm run build:frontend` compiled all static and dynamic pages with 0 errors.
+- **End-to-End Live Verification**: Verified live HTTP interaction between Express backend (port 5000) and Next.js frontend (port 3000).
