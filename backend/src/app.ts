@@ -13,7 +13,7 @@ export function createApp(): Application {
     cors({
       origin: [config.frontendUrl, 'http://localhost:3000'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-User-Id', 'x-user-id'],
       credentials: true,
     })
   );

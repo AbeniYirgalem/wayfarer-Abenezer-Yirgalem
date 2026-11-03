@@ -14,7 +14,14 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
-const pool = globalForPrisma.pool ?? new Pool({ connectionString: config.databaseUrl });
+const pool =
+  globalForPrisma.pool ??
+  new Pool({
+    connectionString: config.databaseUrl,
+    max: 30,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
 const adapter = new PrismaPg(pool);
 
 export const prisma =

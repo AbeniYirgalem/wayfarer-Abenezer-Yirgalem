@@ -140,3 +140,85 @@ Re-running database seeding scripts during development or CI must not corrupt fo
 1. Assign deterministic UUIDv4 identifiers across all seeded records (users, places, tour slots, reviews, bookings).
 2. Utilize Prisma `upsert` queries targeting primary keys and composite unique constraints (`[placeId, userId]`, `[slotId, userId]`).
 3. Ensure seed dataset matches realistic Addis Ababa, Ethiopia cultural, historical, nature, food, and entertainment locations.
+
+
+---
+
+## ADR 09: Bayesian Weighted Rating Algorithm for Honest Rankings
+
+### Context
+Simple arithmetic average ratings create severe ranking anomalies:
+- A new place with a single 5-star review ($100\%$ score) outranks an established cultural landmark with 50 reviews averaging 4.8.
+- Low-volume places are easily manipulated by fraudulent 5-star or 1-star reviews.
+
+### Decision
+Implement the **Bayesian Weighted Rating formula** in `RankingService`:
+$$WR = \frac{v}{v + m} R + \frac{m}{v + m} C$$
+
+Where:
+- $WR$: Weighted Rating
+- $R$: Arithmetic mean rating of the place
+- $v$: Number of reviews for the place
+- $m$: Minimum review count threshold (default: $m = 5$)
+- $C$: Global average rating across all reviewed places in the database (or default prior $3.5$ if empty)
+
+### Consequences
+1. Places with very few reviews are anchored towards the global mean $C$, preventing 1-review anomalies from claiming the top spot.
+2. As review count $v$ increases, the weight $\frac{v}{v+m}$ approaches $1$, allowing verified community consensus to govern the score.
+3. Places with many positive reviews (e.g., 50 reviews of 4.8, $WR \approx 4.68$) decisively outrank places with a single 5-star review (1 review of 5.0, $WR \approx 3.75$).
+
+---
+
+## ADR 10: PostgreSQL Pessimistic Row-Level Locking (`SELECT ... FOR UPDATE`) for Overbooking Prevention
+
+### Context
+When multiple travelers simultaneously book seats for a tour slot with limited remaining capacity, optimistic concurrency control or in-memory availability checks lead to race conditions:
+- User A and User B simultaneously read 2 remaining seats.
+- User A reserves 2 seats; User B reserves 2 seats.
+- Without serializable locking, total seats booked becomes 12 out of 10 (overbooked by 2).
+
+### Decision
+Implement pessimistic row-level locking directly at the database engine level in `BookingService.createBooking`:
+1. Execute within an atomic Prisma transaction (`prisma.$transaction`).
+2. Lock the specific `tour_slots` row exclusively using `SELECT id, "placeId", "startsAt", capacity FROM tour_slots WHERE id = $1 FOR UPDATE`.
+3. Within the locked critical section:
+   - Check if the tour slot date is in the past (reject if past).
+   - Enforce single booking per user per slot (`[slotId, userId]`).
+   - Dynamically aggregate confirmed seats: `SELECT SUM(seats) FROM bookings WHERE "slotId" = $1`.
+   - Compute available seats: `capacity - totalBookedSeats`.
+   - Reject with `409 Conflict` if `requestedSeats > availableSeats`.
+   - Insert new booking record.
+4. Release the row lock on transaction commit.
+
+### Verification
+Verified through an automated stress test in `backend/tests/booking-concurrency.test.ts`:
+- 20 simultaneous parallel requests competed for 2 remaining seats.
+- Exactly 2 requests succeeded with `201 Created`.
+- Exactly 18 requests were rejected with `409 Conflict`.
+- Final database state: exactly 10 booked seats out of 10 capacity, 0 seats overbooked.
+
+---
+
+## ADR 11: Idempotent Review Upsert via Composite Unique Key `[placeId, userId]`
+
+### Context
+A traveler should be able to refine or update their review after a follow-up visit. However, duplicate review submissions from the same user must never distort place review counts or arithmetic ratings.
+
+### Decision
+Utilize Prisma `upsert` targeting the composite unique constraint `@@unique([placeId, userId])`:
+- If no review exists for the `(placeId, userId)` pair: create a new review record and return HTTP `201 Created` (`isNew: true`).
+- If a review already exists: update `rating` and `body` in place, preserve original ID and creation timestamp, and return HTTP `200 OK` (`isNew: false`).
+- Review count remains unchanged upon updates; place statistics are dynamically recomputed.
+
+---
+
+## ADR 12: Declarative Zod Validation Pipeline Across All Request Contexts
+
+### Context
+Validating HTTP inputs manually inside route handlers leads to repetitive parsing, unhandled edge cases, and scattered error responses.
+
+### Decision
+Implement a reusable middleware `validate` in `backend/src/middleware/validate.middleware.ts`:
+- Accepts independent Zod schemas for `params`, `query`, `body`, and `headers`.
+- Replaces incoming `req` properties with parsed and sanitized values (e.g., trimming whitespace, transforming strings to integers/enums).
+- Automatically converts Zod validation failures into uniform HTTP `400 Bad Request` responses before controllers are executed.

@@ -82,3 +82,50 @@ This document details the AI tooling, prompts, code generation workflows, and hu
 - **Vitest Test Suite**: 11 passing tests across 4 test files (`constraints.test.ts`, `health.test.ts`, `ranking.test.ts`, `booking-concurrency.test.ts`).
 - **TypeScript Compilation**: `npm run typecheck` passed with 0 errors in both `backend/` and `frontend/`.
 - **ESLint & Next.js Build**: `npm run lint` and `npm run build` succeeded with 0 errors.
+
+
+---
+
+## 5. Prompts & Workflow Stages (Phase 3: Express.js REST API Development & Business Logic)
+
+### Stage 1: Requirements Analysis & Architecture Verification
+- **Prompt**: "Codex Prompt — Phase 3: Express.js REST API Development & Business Logic"
+- **Action**: Parsed core requirements strictly scoped to `backend/`:
+  - `GET /api/health`: Health status.
+  - `GET /api/places`: Category, search, and Bayesian ranking filters.
+  - `GET /api/places/:id`: Place metadata, attributed reviews, dynamically calculated tour availability.
+  - `POST /api/places/:id/reviews`: Upsert logic with `X-User-Id` header and Zod validation.
+  - `GET /api/users`: Seeded user list for user switcher.
+  - `GET /api/tours/:id/bookings`: Tour slot availability calculation.
+  - `POST /api/tours/:id/bookings`: Concurrency-safe seat reservation using PostgreSQL row-level locks (`SELECT ... FOR UPDATE`).
+
+### Stage 2: Service & Controller Implementation
+- **Generated**:
+  - `RankingService`: Bayesian weighted rating algorithm ($WR = \frac{v}{v+m} R + \frac{m}{v+m} C$, $m=5$).
+  - `PlaceService`: Category filtering, search query handling, top-rated Bayesian sorting, and slot availability aggregation.
+  - `ReviewService`: Prisma upsert on `[placeId, userId]`, existence checks, and dynamic place stats recalculation.
+  - `BookingService`: Pessimistic locking inside `$transaction` via parameterized `SELECT ... FOR UPDATE`, past slot rejection, duplicate check, and capacity check.
+  - `UserService`: User listing for client switcher.
+  - Controllers and routes in `backend/src/controllers/` and `backend/src/routes/`.
+  - Zod schemas in `backend/src/validations/`.
+
+### Stage 3: Automated Test Suites
+- **Generated**:
+  - `backend/tests/ranking.test.ts`: Verified Bayesian formula, 5-star outlier dampening, low rating penalty, and tie-breaking.
+  - `backend/tests/review.test.ts`: Verified first submission (201), update on re-submission (200), review count preservation, rating range validation (1–5), empty body rejection, >500 char rejection, and non-existent user/place rejection.
+  - `backend/tests/booking.test.ts`: Verified initial availability, seat reservation decrement, capacity exhaustion (409), past slot rejection (400), invalid seats (400), and duplicate booking rejection (409).
+  - `backend/tests/booking-concurrency.test.ts`: Verified true PostgreSQL concurrency using 20 simultaneous requests competing for 2 remaining seats (exactly 2 succeed with 201, 18 reject with 409, final booked = 10, remaining = 0).
+  - `backend/tests/place.test.ts`: Category filters, substring search, top-rated sorting, details, 404, and UUID validation.
+  - `backend/tests/user.test.ts`: Seeded users list retrieval.
+
+---
+
+## 6. Phase 3 Verification Record
+
+- **Automated Vitest Tests**: 40 passing tests across 8 test suites (`tests/ranking.test.ts`, `tests/review.test.ts`, `tests/booking.test.ts`, `tests/booking-concurrency.test.ts`, `tests/place.test.ts`, `tests/user.test.ts`, `tests/constraints.test.ts`, `tests/health.test.ts`).
+- **TypeScript Typecheck**:
+  - `npm run typecheck:backend` passed with 0 errors.
+  - `npm run typecheck:frontend` passed with 0 errors.
+- **ESLint**:
+  - `npm run lint:frontend` passed with 0 warnings / errors.
+- **Frontend Isolation**: Zero modifications made to `frontend/`. All changes strictly contained in `backend/` and root documentation.
