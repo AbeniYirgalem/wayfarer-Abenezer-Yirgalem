@@ -167,3 +167,34 @@ This document details the AI tooling, prompts, code generation workflows, and hu
 - **ESLint**: `npm run lint:frontend` passed with 0 errors / warnings (resolved React 19 `set-state-in-effect` and Next.js navigation rules).
 - **Production Build**: `npm run build:frontend` compiled all static and dynamic pages with 0 errors.
 - **End-to-End Live Verification**: Verified live HTTP interaction between Express backend (port 5000) and Next.js frontend (port 3000).
+
+---
+
+## 8. Prompts & Workflow Stages (Phase 5: End-to-End Testing, Integration & Quality Assurance)
+
+### Stage 1: Quality Assurance & Codebase Inspection
+- **Prompt**: "Codex Prompt — Phase 5: Wayfarer End-to-End Testing, Integration & Quality Assurance"
+- **Action**: Performed complete audit across backend API routes, services, middleware, Prisma migrations, seed scripts, frontend components, hooks, API client, and documentation.
+
+### Stage 2: Bugs Discovered & Resolved
+1. **Search Query Scope Expansion**:
+   - *Discovery*: `PlaceService.getPlaces` search query only filtered against `where.name`. If a user searched for keywords present in the place description (e.g., "volcanic", "monument"), results were omitted.
+   - *Fix*: Updated `where.OR` in `backend/src/services/place.service.ts` to perform case-insensitive containment checks across both `name` and `description`.
+2. **Production Server Startup Script**:
+   - *Discovery*: `backend/package.json` specified `"start": "node dist/server.js"`, but `tsconfig.json` compiled output to `dist/src/server.js`. Running `npm start --prefix backend` failed with `MODULE_NOT_FOUND`.
+   - *Fix*: Updated `backend/package.json` to `"main": "dist/src/server.js"` and `"start": "node dist/src/server.js"`.
+3. **Prisma Transaction Timeout under High Concurrency**:
+   - *Discovery*: Under 20-worker parallel stress testing in Vitest, default Prisma interactive transaction timeout (`maxWait: 2000`) caused tail transactions to abort before acquiring the row lock.
+   - *Fix*: Added `{ maxWait: 10000, timeout: 10000 }` to `prisma.$transaction` in `backend/src/services/booking.service.ts`.
+4. **PostCSS Anonymous Default Export Warning**:
+   - *Discovery*: ESLint flagged an anonymous default export in `frontend/postcss.config.mjs`.
+   - *Fix*: Assigned to named constant before exporting: `const postcssConfig = { ... }; export default postcssConfig;`.
+
+### Stage 3: Verification & Sign-Off
+- **Automated Tests**: 40 of 40 tests passing across 8 Vitest suites (`ranking.test.ts`, `review.test.ts`, `booking.test.ts`, `booking-concurrency.test.ts`, `place.test.ts`, `user.test.ts`, `constraints.test.ts`, `health.test.ts`).
+- **PostgreSQL Concurrency Test**: Verified 20 simultaneous requests competing for 2 seats yields exactly 2 successes (`201`), 18 rejections (`409 Conflict`), and final booked seats equal to capacity (10/10).
+- **TypeScript Typecheck**: Backend (`npm run typecheck:backend`) and Frontend (`npm run typecheck:frontend`) passed with 0 errors.
+- **Frontend Linting**: `npm run lint:frontend` passed with 0 warnings / errors.
+- **Production Builds**: Backend (`npm run build:backend`) and Next.js frontend (`npm run build:frontend`) compiled cleanly.
+- **Prisma Schema & Seed**: Migrations verified (`npx prisma migrate status`), idempotent seed executed (`npm run db:seed`).
+- **Live HTTP Endpoints**: Verified all 7 REST endpoints against running backend service.

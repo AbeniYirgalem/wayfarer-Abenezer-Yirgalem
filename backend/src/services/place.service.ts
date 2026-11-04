@@ -79,10 +79,21 @@ export class PlaceService {
     }
 
     if (search && search.trim().length > 0) {
-      where.name = {
-        contains: search.trim(),
-        mode: 'insensitive',
-      };
+      const term = search.trim();
+      where.OR = [
+        {
+          name: {
+            contains: term,
+            mode: 'insensitive',
+          },
+        },
+        {
+          description: {
+            contains: term,
+            mode: 'insensitive',
+          },
+        },
+      ];
     }
 
     const [places, overallAverage] = await Promise.all([

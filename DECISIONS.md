@@ -263,3 +263,18 @@ Filtering places by search term or category must not trigger premature requests 
 2. Send all category, search, and top-rated sorting requests directly to `GET /api/places?category=...&sort=top-rated&search=...`.
 3. Prevent duplicate client-side ranking math; trust the backend's verified Bayesian weighted rating score.
 4. Provide a single-click reset control and dynamic results counter for clear visitor feedback.
+
+---
+
+## ADR 16: Concurrency Lock Tuning and Full-Text Search Scope
+
+### Context
+During Phase 5 End-to-End Testing and QA, two operational bottlenecks were identified:
+1. Search queries only matched `name`, omitting relevant places when search terms existed within rich destination descriptions.
+2. Under 20-worker parallel stress testing against PostgreSQL row-level locking, default Prisma transaction `maxWait` (2000ms) caused queue timeouts before tail requests could obtain lock status.
+
+### Decision
+1. **Search Expansion**: Updated `PlaceService.getPlaces` to search both destination `name` and `description` concurrently using Prisma case-insensitive `where.OR`.
+2. **Transaction Timeout Tuning**: Configured `prisma.$transaction(async (tx) => { ... }, { maxWait: 10000, timeout: 10000 })` in `BookingService.createBooking`, providing adequate queue headroom for 20 simultaneous competing requests under row locks.
+3. **Entry Point Alignment**: Updated `backend/package.json` entry points (`main` and `start`) to reflect TypeScript's preservation of the `src/` directory within `dist/src/server.js`.
+
