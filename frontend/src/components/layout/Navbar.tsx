@@ -44,7 +44,7 @@ export function Navbar() {
               </Link>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#163D32]/10 text-[#163D32]">
                 <ShieldCheckIcon className="w-3.5 h-3.5 text-[#163D32]" />
-                Bayesian Verified
+                Verified Reviews
               </span>
             </nav>
 
@@ -88,7 +88,7 @@ export function Navbar() {
           <div className="pt-2">
             <div className="px-3 py-2 bg-[#163D32]/5 rounded-xl flex items-center gap-2 text-xs text-[#163D32]">
               <ShieldCheckIcon className="w-4 h-4 shrink-0" />
-              <span>Honest Bayesian place ratings & overbooking-proof tour slots</span>
+              <span>Honest place ratings & guaranteed tour reservations</span>
             </div>
           </div>
         </div>

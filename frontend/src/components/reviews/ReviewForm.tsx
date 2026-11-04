@@ -43,7 +43,7 @@ export function ReviewForm({
     setSuccessMessage(null);
 
     if (!currentUser) {
-      setValidationError('Please select an acting traveler identity in the navbar first.');
+      setValidationError('Please select a traveler profile in the navigation bar first.');
       return;
     }
 
@@ -127,9 +127,9 @@ export function ReviewForm({
         <div className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
           <AlertCircleIcon className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
           <div>
-            <p className="font-semibold">User identity required</p>
+            <p className="font-semibold">Traveler profile required</p>
             <p className="mt-0.5 text-amber-800">
-              Please choose a traveler persona from the &ldquo;Acting as&rdquo; dropdown in the navigation bar to submit a review.
+              Please choose a traveler profile from the user menu in the navigation bar to submit a review.
             </p>
           </div>
         </div>

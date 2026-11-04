@@ -9,14 +9,14 @@ export function ApiHealthStatus() {
 
   const verifyHealth = async () => {
     setStatus('loading');
-    setMessage('Connecting to backend...');
+    setMessage('Connecting to service...');
     try {
       const res = await api.checkHealth();
       setStatus('connected');
       setMessage(res.message);
     } catch (err) {
       setStatus('error');
-      setMessage((err as Error).message || 'Failed to connect to backend API');
+      setMessage((err as Error).message || 'Failed to connect to service');
     }
   };
 
@@ -33,7 +33,7 @@ export function ApiHealthStatus() {
       .catch((err) => {
         if (isMounted) {
           setStatus('error');
-          setMessage((err as Error).message || 'Failed to connect to backend API');
+          setMessage((err as Error).message || 'Failed to connect to service');
         }
       });
 
@@ -56,7 +56,7 @@ export function ApiHealthStatus() {
         />
         <div>
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Express Backend Status
+            Platform Service Status
           </div>
           <div className="text-sm font-medium text-slate-800">
             {status === 'connected' && `Operational — ${message}`}

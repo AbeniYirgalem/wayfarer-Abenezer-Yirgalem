@@ -7,7 +7,7 @@ import { UserProvider } from '../context/UserContext';
 export const metadata: Metadata = {
   title: 'Wayfarer — Honest Ratings, Fair Bookings',
   description:
-    'A premium travel discovery and tour booking platform for Addis Ababa, Ethiopia. Powered by Bayesian rating honesty and concurrency-safe seat reservations.',
+    'A premium travel discovery and tour booking platform for Addis Ababa, Ethiopia. Discover authentic destinations and book guided tours with verified community ratings.',
 };
 
 export default function RootLayout({

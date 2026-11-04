@@ -56,7 +56,7 @@ export function UserSwitcher() {
         )}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Select acting user identity"
+        aria-label="Select traveler profile"
       >
         <div
           className={cn(
@@ -68,10 +68,10 @@ export function UserSwitcher() {
         </div>
         <div className="flex flex-col text-left">
           <span className={cn('text-[10px] leading-tight', isOpen ? 'text-white/80' : 'text-[#777D78]')}>
-            Acting as
+            Traveler
           </span>
           <span className="font-semibold leading-tight max-w-[100px] truncate">
-            {currentUser ? currentUser.name : 'Select user'}
+            {currentUser ? currentUser.name : 'Select profile'}
           </span>
         </div>
         <ChevronDownIcon
@@ -88,9 +88,9 @@ export function UserSwitcher() {
           className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-[#EDE9DF] shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
         >
           <div className="px-3.5 py-2 border-b border-[#EDE9DF]/80">
-            <p className="text-xs font-semibold text-[#252A27]">Acting Traveler Identity</p>
+            <p className="text-xs font-semibold text-[#252A27]">Traveler Profile</p>
             <p className="text-[11px] text-[#777D78] mt-0.5">
-              Select a traveler persona to simulate reviews and bookings via the <code className="text-[#163D32] bg-[#F8F7F3] px-1 py-0.5 rounded">X-User-Id</code> header.
+              Select your profile to write reviews and book guided tour slots.
             </p>
           </div>
 
@@ -125,8 +125,8 @@ export function UserSwitcher() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">{user.name}</p>
-                      <p className="text-[10px] text-[#777D78] truncate font-mono">
-                        {user.id.slice(0, 8)}...
+                      <p className="text-[10px] text-[#777D78] truncate">
+                        Verified Traveler
                       </p>
                     </div>
                   </div>

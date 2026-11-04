@@ -187,13 +187,13 @@ export default function PlaceDetailsPage() {
               Available Tour Slots
             </h2>
             <p className="text-xs text-[#777D78] mt-1">
-              Guaranteed fair booking with PostgreSQL row-level locks. Zero risk of overbooking.
+              Reserve your guided experience with instant confirmation and guaranteed seat availability.
             </p>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-[#163D32] bg-[#163D32]/10 px-3 py-1.5 rounded-xl border border-[#163D32]/20 font-medium">
             <ShieldCheckIcon className="w-4 h-4 shrink-0" />
-            <span>Real-time seat verification</span>
+            <span>Guaranteed departures</span>
           </div>
         </div>
 

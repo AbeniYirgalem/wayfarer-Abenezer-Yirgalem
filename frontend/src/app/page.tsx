@@ -44,7 +44,7 @@ export default function HomePage() {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        const message = err instanceof Error ? err.message : 'Failed to retrieve places from API';
+        const message = err instanceof Error ? err.message : 'Failed to retrieve places. Please try again.';
         setError(message);
         setIsLoading(false);
       });
@@ -67,7 +67,7 @@ export default function HomePage() {
         setError(null);
       })
       .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : 'Failed to retrieve places from API';
+        const message = err instanceof Error ? err.message : 'Failed to retrieve places. Please try again.';
         setError(message);
       })
       .finally(() => {

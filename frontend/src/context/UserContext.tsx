@@ -42,7 +42,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       setCurrentUser(matched || null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load acting users from API';
+      const msg = err instanceof Error ? err.message : 'Failed to load traveler profiles';
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -74,7 +74,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        const msg = err instanceof Error ? err.message : 'Failed to load acting users from API';
+        const msg = err instanceof Error ? err.message : 'Failed to load traveler profiles';
         setError(msg);
         setIsLoading(false);
       });

@@ -46,8 +46,8 @@ export function HeroSection({
 
         {/* Editorial Description */}
         <p className="max-w-2xl mx-auto text-base sm:text-lg text-white/80 leading-relaxed mb-10">
-          Explore the vibrant culture, history, and landscapes of Addis Ababa without misleading
-          reviews or overbooked tours. Powered by authentic Bayesian rankings and real-time seat guarantees.
+          Explore the vibrant culture, history, and landscapes of Addis Ababa with honest
+          community ratings and guaranteed tour bookings.
         </p>
 
         {/* Hero Interactive Search Bar */}
@@ -81,11 +81,11 @@ export function HeroSection({
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Bayesian Weighted Ratings
+            Verified Reviews
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Zero Overbooking Guarantee
+            Guaranteed Departures
           </span>
         </div>
       </div>

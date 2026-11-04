@@ -45,7 +45,7 @@ export function BookingModal({
     setErrorMessage(null);
 
     if (!currentUser) {
-      setErrorMessage('Please select a traveler identity in the navigation bar first.');
+      setErrorMessage('Please select a traveler profile in the navigation bar first.');
       return;
     }
 
@@ -140,7 +140,7 @@ export function BookingModal({
             <div className="mb-6">
               <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#163D32] mb-1">
                 <ShieldCheckIcon className="w-3.5 h-3.5 text-[#163D32]" />
-                Zero Overbooking Guaranteed
+                Guaranteed Availability
               </div>
               <h3 id="booking-modal-title" className="font-serif text-2xl font-bold text-[#252A27]">
                 Reserve Tour Seats
@@ -171,7 +171,7 @@ export function BookingModal({
               </div>
             </div>
 
-            {/* Current Acting User */}
+            {/* Current Traveler Profile */}
             <div className="mb-6 p-3.5 rounded-2xl bg-white border border-[#EDE9DF] flex items-center justify-between text-xs">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full bg-[#163D32] text-white flex items-center justify-center font-bold text-xs">
@@ -188,7 +188,7 @@ export function BookingModal({
               </div>
               {!currentUser && (
                 <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                  Select identity in navbar
+                  Select profile in navbar
                 </span>
               )}
             </div>

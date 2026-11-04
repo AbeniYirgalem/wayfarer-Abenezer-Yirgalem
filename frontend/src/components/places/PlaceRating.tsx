@@ -64,13 +64,10 @@ export function PlaceRating({
         </div>
       )}
 
-      {/* Bayesian Weighted Rating Badge (if provided) */}
-      {weightedRating !== undefined && reviewCount > 0 && (
-        <span
-          title={`Bayesian Weighted Score (${weightedRating.toFixed(2)}): Corrected for small sample sizes to eliminate review manipulation.`}
-          className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#163D32]/10 text-[#163D32] border border-[#163D32]/20 cursor-help ml-1"
-        >
-          ★ {weightedRating.toFixed(2)} Honest Rank
+      {/* Top Rated Badge for highly-rated places */}
+      {weightedRating !== undefined && reviewCount > 0 && weightedRating >= 4.0 && (
+        <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#163D32]/10 text-[#163D32] border border-[#163D32]/20 ml-1">
+          Top Rated
         </span>
       )}
     </div>

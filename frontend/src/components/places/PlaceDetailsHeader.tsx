@@ -105,15 +105,14 @@ export function PlaceDetailsHeader({ place }: PlaceDetailsHeaderProps) {
             </div>
           </div>
 
-          {/* Bayesian Rating Explainer Box */}
+          {/* Verified Reviews Assurance */}
           <div className="p-4 rounded-2xl bg-[#F8F7F3] border border-[#EDE9DF]">
             <div className="flex items-center gap-2 text-xs font-semibold text-[#163D32] mb-1">
               <ShieldCheckIcon className="w-4 h-4 text-[#163D32]" />
-              <span>Honest Rating Transparency</span>
+              <span>Verified Community Feedback</span>
             </div>
             <p className="text-[11px] text-[#777D78] leading-relaxed">
-              Wayfarer calculates an honest ranking score ({place.weightedRating.toFixed(2)}) using
-              Bayesian statistical smoothing, preventing 1-review outliers from manipulating rankings.
+              Ratings and reviews are submitted by verified travelers who have experienced this destination firsthand.
             </p>
           </div>
         </div>

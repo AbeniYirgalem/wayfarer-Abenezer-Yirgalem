@@ -19,12 +19,11 @@ export function Footer() {
             </div>
             <p className="text-sm text-white/80 leading-relaxed max-w-md">
               Honest ratings and fair bookings for authentic travel discovery in Addis Ababa, Ethiopia.
-              Engineered to eliminate misleading place rankings through Bayesian statistical weighting and
-              prevent tour overbooking through PostgreSQL row-level locks.
+              Discover curated places, read verified traveler reviews, and reserve guided tours with confidence.
             </p>
             <div className="flex items-center gap-2 text-xs text-emerald-300">
               <ShieldCheckIcon className="w-4 h-4" />
-              <span>Full-Stack Engineer Internship Assignment — Rago Software Solutions</span>
+              <span>Verified reviews & guaranteed tour bookings</span>
             </div>
           </div>
 
@@ -57,24 +56,39 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Architecture & Engineering */}
+          {/* Experience Wayfarer */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-300 mb-4">
-              Architecture
+              Experience Wayfarer
             </h4>
-            <ul className="space-y-2 text-xs text-white/80">
-              <li>Next.js App Router (Client)</li>
-              <li>Express.js + TypeScript (API)</li>
-              <li>PostgreSQL 17 + Prisma ORM</li>
-              <li>Bayesian Weighted Rating ($m=5$)</li>
-              <li>Pessimistic Row-Level Locking</li>
+            <ul className="space-y-2.5 text-sm text-white/80">
+              <li>
+                <Link href="/#explore" className="hover:text-white transition-colors">
+                  Top Rated Places
+                </Link>
+              </li>
+              <li>
+                <Link href="/#explore" className="hover:text-white transition-colors">
+                  Guided Tour Slots
+                </Link>
+              </li>
+              <li>
+                <Link href="/#explore" className="hover:text-white transition-colors">
+                  Verified Traveler Reviews
+                </Link>
+              </li>
+              <li>
+                <Link href="/#explore" className="hover:text-white transition-colors">
+                  Addis Ababa Guide
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 mt-12 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-white/60 gap-4">
           <p>© {new Date().getFullYear()} Wayfarer — Honest Ratings, Fair Bookings. All rights reserved.</p>
-          <p className="font-mono text-[11px]">Strictly Decoupled Next.js + Express Monorepo</p>
+          <p className="text-xs text-white/60">Crafted for authentic travel discovery</p>
         </div>
       </div>
     </footer>

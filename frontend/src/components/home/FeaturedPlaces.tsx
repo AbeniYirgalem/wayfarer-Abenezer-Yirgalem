@@ -49,7 +49,7 @@ export function FeaturedPlaces({
           </h2>
           <p className="text-sm text-[#777D78] mt-2 max-w-xl">
             Authentic historical landmarks, culinary gems, mountain vistas, and cultural hotspots —
-            ranked fairly using Bayesian statistical smoothing to prevent rating fraud.
+            curated and ranked by verified community travelers.
           </p>
         </div>
 
@@ -65,10 +65,10 @@ export function FeaturedPlaces({
                 ? 'bg-[#163D32] text-white border-[#163D32]'
                 : 'bg-white text-[#252A27] border-[#EDE9DF] hover:border-[#D6D2C4] hover:bg-[#F8F7F3]'
             )}
-            title="Sort places using Bayesian weighted formula: WR = (v / (v+5))*R + (5 / (v+5))*C"
+            title="Show top rated places first"
           >
             <SparklesIcon className={cn('w-4 h-4', isTopRated ? 'text-amber-300' : 'text-amber-500')} />
-            <span>Top Rated (Honest)</span>
+            <span>Top Rated</span>
           </button>
 
           {/* Reset Filters (when active) */}
@@ -109,7 +109,7 @@ export function FeaturedPlaces({
           )}
           {isTopRated && (
             <span className="text-[#163D32] font-semibold bg-[#163D32]/10 px-2 py-0.5 rounded-md text-[11px]">
-              Sorted by Bayesian Weight
+              Top Rated First
             </span>
           )}
         </div>
