@@ -237,3 +237,30 @@ This document details the AI tooling, prompts, code generation workflows, and hu
 - Frontend lint (`npm run lint --prefix frontend`) passed with 0 errors / warnings.
 - Frontend build (`npm run build --prefix frontend`) compiled successfully with Turbopack.
 - Backend tests (`npm test --prefix backend`) verified 40 of 40 tests passing; no backend business logic or ranking algorithms were altered.
+
+---
+
+## 10. Prompts & Workflow Stages (Phase 6: Final Review, Documentation & GitHub Submission Preparation)
+
+### Stage 1: Requirements Ingestion & Assignment Compliance Audit
+- **Prompt**: "Codex Prompt — Phase 6: Wayfarer Final Review, Documentation & GitHub Submission Preparation"
+- **Action**: Performed line-by-line review against all original assignment requirements:
+  - Verified no auth / login was added; profile switching works seamlessly via `X-User-Id`.
+  - Verified 3 seeded users and 10 realistic places across Addis Ababa.
+  - Verified backend-driven category filtering and Bayesian top-rated sorting.
+  - Verified dynamic tour slot availability and overbooking prevention via PostgreSQL row-level locks.
+  - Verified 1-review-per-place constraint and review upsert behavior.
+  - Verified 40 passing automated tests across 8 suites.
+
+### Stage 2: Documentation & Repository Enhancements
+- **Enhanced `README.md`**: Added a 3-command quickstart section, prerequisites checklist, full API specification, reviewer notes for `KenaGetachew`, and setup verification scripts.
+- **Enhanced `.env.example`**: Documented safe placeholders including `SHADOW_DATABASE_URL` for development migrations.
+- **Repository Audit**: Verified working tree cleanliness, public repository visibility on GitHub, and proper `.gitignore` exclusion of credentials and build artifacts.
+
+### Stage 3: Final Verification Sign-Off
+- Verified Prisma migrations up to date (`npx prisma migrate status`).
+- Verified idempotent seed execution (`npm run db:seed`).
+- Verified backend test suite (40/40 passing).
+- Verified TypeScript typechecks across both `frontend/` and `backend/` (0 errors).
+- Verified Next.js production build (`npm run build:frontend`).
+- Verified Express backend production build (`npm run build:backend`).

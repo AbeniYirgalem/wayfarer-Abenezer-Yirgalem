@@ -4,18 +4,46 @@
 
 ---
 
+## ⚡ 3-Command Quickstart
+
+Run the entire application locally in three commands:
+
+```bash
+# 1. Start PostgreSQL 17 database container
+docker compose up -d
+
+# 2. Run migrations and database seed (Addis Ababa dataset)
+npm run db:migrate && npm run db:seed
+
+# 3. Start development servers (in separate terminals)
+npm run dev:backend    # API at http://localhost:5000
+npm run dev:frontend   # App at http://localhost:3000
+```
+
+---
+
 ## 1. Project Overview & Value Proposition
 
 Wayfarer offers travelers an authentic, reliable platform to:
 - **Discover places** across diverse categories (History, Food, Nature, Culture, Entertainment) in Addis Ababa, Ethiopia.
-- **Experience Honest Rankings**: Powered by a **Bayesian weighted rating algorithm** ($WR = \frac{v}{v+m} R + \frac{m}{v+m} C$) that prevents 1-review outliers from unfairly dominating places with dozens of verified positive reviews.
+- **Experience Honest Rankings**: Powered by a backend **Bayesian weighted rating algorithm** ($WR = \frac{v}{v+m} R + \frac{m}{v+m} C$) that prevents 1-review outliers from unfairly dominating places with dozens of verified positive reviews.
 - **Fair, Overbooking-Proof Bookings**: Powered by **PostgreSQL pessimistic row-level locking** (`SELECT ... FOR UPDATE`) inside atomic database transactions, guaranteeing that concurrent seat reservations never exceed capacity.
 - **Read & submit verified reviews** protected by database-level composite unique keys (`[placeId, userId]`) and check constraints.
-- **Switch Traveler Identities**: Integrated acting-as user switcher simulating verified traveler personas with persistent client session state.
+- **Switch Traveler Profiles**: Seamless traveler profile switcher simulating verified traveler personas with persistent client session state.
 
 ---
 
-## 2. Architecture & Monorepo Structure
+## 2. Prerequisites
+
+Before running Wayfarer, ensure the following are installed on your machine:
+- **Node.js**: `v20.x` or higher (`v24.x` recommended)
+- **npm**: `v10.x` or higher
+- **Docker & Docker Compose**: Required for running the PostgreSQL 17 Alpine database container.
+- **Git**: For cloning and repository management.
+
+---
+
+## 3. Architecture & Monorepo Structure
 
 Wayfarer is engineered as a **strictly decoupled monorepo** consisting of two independent applications:
 1. **Frontend (`frontend/`)**: Next.js (App Router), React 19, TypeScript, and Tailwind CSS. Acts strictly as the client presentation layer with no direct database access.
@@ -101,11 +129,11 @@ wayfarer/
 
 ---
 
-## 3. Technology Stack
+## 4. Technology Stack
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide-style SVG icons |
+| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Custom SVG icon library |
 | **Backend** | Node.js, Express.js 4/5, TypeScript, REST API |
 | **Database & ORM** | PostgreSQL 17 Alpine, Prisma ORM 7 (`@prisma/adapter-pg`, `pg.Pool`) |
 | **Validation** | Zod |
@@ -114,28 +142,28 @@ wayfarer/
 
 ---
 
-## 4. Frontend Features & User Experience (Phase 4)
+## 5. Frontend Features & User Experience
 
-### 1. Acting-as User Switcher (`UserSwitcher.tsx`)
+### 1. Traveler Profile Switcher (`UserSwitcher.tsx`)
 - Located directly in the top navigation bar.
 - Fetches real seeded users from `GET /api/users` (`Abenezer`, `Hana`, `Dawit`).
-- Persists selected user ID in `localStorage` across page navigations and browser refreshes.
-- Attaches the selected user ID as the `X-User-Id` header on all review submissions and tour bookings.
-- Clearly flags unauthenticated actions with warning banners if no user is chosen.
+- Persists active profile in browser `localStorage` across page navigations and refreshes.
+- Automatically injects the selected user ID as the `X-User-Id` header on all review submissions and tour bookings.
+- Clearly flags unselected states with helpful prompts to guide traveler actions.
 
 ### 2. Editorial Discovery Homepage (`page.tsx`)
-- **Hero Section**: Large travel photography, search input, explore CTA, quick quality badges.
-- **Category Filter Tabs**: All Places, History, Food, Nature, Culture, and Entertainment with active states.
+- **Hero Section**: Curated photography, search bar, explore call-to-action, quality assurance badges.
+- **Category Filter Tabs**: All Destinations, History & Heritage, Food & Dining, Nature & Parks, Art & Culture, and Entertainment with real-time active states.
 - **Top-Rated Toggle**: Directly queries `GET /api/places?sort=top-rated` to order places by Bayesian weighted score.
 - **Search Integration**: Debounced search querying `GET /api/places?search=...` against destination titles and descriptions.
-- **Interactive Destination Grid**: Responsive cards with hover image zoom, opening hours, location badges, star visualizations, and honest rank badges.
+- **Interactive Destination Grid**: Responsive cards with hover image zoom, opening hours, location badges, star visualizations, review counts, and Top Rated badges.
 
 ### 3. Place Details Experience (`/places/[id]`)
-- **Editorial Header**: Image banner, category tags, location metadata, opening hours, and honest rating explainer.
+- **Editorial Header**: Image banner, category tags, location metadata, opening hours, and verified traveler community assurance.
 - **Real-Time Tour Slots & Booking**:
   - Displays all upcoming departure slots, start time, total capacity, and available seats.
   - "Reserve Seats" modal with interactive seat counter ($1 \le seats \le available$).
-  - Full capacity protection and clear `409 Conflict` messaging: *"Sorry, those seats are no longer available. Please choose another time or a smaller group."*
+  - Full capacity protection and clear `409 Conflict` messaging: *"Sorry, this tour is fully booked or does not have enough available seats."*
   - Instant background refresh upon successful booking.
 - **Verified Reviews & Form**:
   - Chronological list of traveler reviews with author names and dates.
@@ -144,7 +172,7 @@ wayfarer/
 
 ---
 
-## 5. REST API Specification
+## 6. REST API Specification
 
 All backend endpoints are mounted under `/api` and return standardized JSON envelopes.
 
@@ -160,14 +188,14 @@ All backend endpoints are mounted under `/api` and return standardized JSON enve
 
 ---
 
-## 6. Local Setup & Execution Instructions
+## 7. Local Setup & Execution Instructions
 
 ### Step 1: Clone Repository & Configure Environment
 
 ```bash
 # Clone the repository
 git clone https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem.git
-cd wayfarer
+cd wayfarer-Abenezer-Yirgalem
 
 # Configure Backend Environment
 cp backend/.env.example backend/.env
@@ -204,17 +232,43 @@ Open [http://localhost:3000](http://localhost:3000) to view the Wayfarer applica
 ### Step 4: Verification Commands
 
 ```bash
-# Verify backend unit & concurrency tests
+# Verify backend unit & concurrency tests (40 passing tests)
 npm run test:backend
 
-# Verify TypeScript compilation
+# Verify TypeScript compilation (0 errors)
 npm run typecheck:backend
 npm run typecheck:frontend
 
-# Verify ESLint on frontend
+# Verify ESLint on frontend (0 warnings / errors)
 npm run lint:frontend
 
 # Verify production builds
 npm run build:backend
 npm run build:frontend
 ```
+
+---
+
+## 8. Reviewer & Evaluation Guide
+
+### 1. Zero Authentication / Traveler Switcher
+- The project intentionally avoids passwords, login walls, or JWT sessions as specified by the take-home prompt.
+- To test interactions as different users, select a traveler persona (`Abenezer`, `Hana`, or `Dawit`) from the dropdown menu in the top navigation bar.
+- The active identity is persisted in `localStorage` and injected via the `X-User-Id` HTTP header on review and booking requests.
+
+### 2. Bayesian Weighted Rating Verification
+- Backend ranking is computed via:
+  $$WR = \frac{v}{v + m} R + \frac{m}{v + m} C$$
+  where $m = 5$, $v$ is review count, $R$ is place arithmetic mean, and $C$ is system-wide average rating ($3.50$ prior).
+- Places with many positive reviews (e.g. 50 reviews at 4.8, $WR \approx 4.68$) decisively outrank single 5-star outlier reviews ($WR = 3.75$).
+- Toggling "Top Rated" on the homepage directly queries `GET /api/places?sort=top-rated` to demonstrate deterministic ranking.
+
+### 3. Concurrency Protection & Overbooking Prevention
+- Tour seat reservations use PostgreSQL pessimistic row-level locking (`SELECT ... FOR UPDATE`) within atomic database transactions (`prisma.$transaction`).
+- When a slot is full or requested seats exceed availability, the API returns `HTTP 409 Conflict` with a user-friendly message.
+- True PostgreSQL parallel concurrency is validated via `backend/tests/booking-concurrency.test.ts` (20 simultaneous competing requests for 2 remaining seats yield exactly 2 successes and 18 conflict rejections, with zero overbooking).
+
+### 4. GitHub Submission & Access
+- Repository: [wayfarer-Abenezer-Yirgalem](https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem)
+- Visibility: **Public** (verified accessible without login).
+- Evaluator access: **`KenaGetachew`** has immediate read access. If collaborator invitation is preferred, navigate to *Settings > Collaborators > Add people* and enter `KenaGetachew`.
