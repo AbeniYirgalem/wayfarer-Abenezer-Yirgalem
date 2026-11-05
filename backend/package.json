@@ -2,11 +2,11 @@
   "name": "wayfarer-backend",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/src/server.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/src/server.js",
+    "start": "node dist/server.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

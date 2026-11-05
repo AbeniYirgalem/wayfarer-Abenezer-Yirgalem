@@ -437,7 +437,12 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .then(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  })
+  .catch(async (e) => {
     console.error('Error during database seed:', e);
+    await prisma.$disconnect();
     process.exit(1);
   });

@@ -6,19 +6,21 @@
 
 ## ⚡ 3-Command Quickstart
 
-Run the entire application locally in three commands:
+Run the entire application locally in three commands with only **Docker Desktop** and **Git** installed:
 
 ```bash
-# 1. Start PostgreSQL 17 database container
-docker compose up -d
+# 1. Clone repository
+git clone https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem.git
+cd wayfarer-Abenezer-Yirgalem
 
-# 2. Run migrations and database seed (Addis Ababa dataset)
-npm run db:migrate && npm run db:seed
+# 2. Copy environment template (works out of the box)
+cp .env.example .env    # Windows PowerShell: Copy-Item .env.example .env
 
-# 3. Start development servers (in separate terminals)
-npm run dev:backend    # API at http://localhost:5000
-npm run dev:frontend   # App at http://localhost:3000
+# 3. Start complete application (PostgreSQL + Express Backend + Next.js Frontend)
+docker compose up --build -d
 ```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. All database migrations and seed data run automatically on startup!
 
 ---
 
@@ -35,11 +37,15 @@ Wayfarer offers travelers an authentic, reliable platform to:
 
 ## 2. Prerequisites
 
-Before running Wayfarer, ensure the following are installed on your machine:
-- **Node.js**: `v20.x` or higher (`v24.x` recommended)
-- **npm**: `v10.x` or higher
-- **Docker & Docker Compose**: Required for running the PostgreSQL 17 Alpine database container.
-- **Git**: For cloning and repository management.
+| Tool | Minimum Version | Required For |
+| :--- | :--- | :--- |
+| **Docker Desktop** (or Docker Engine) | Docker 24.x+ / Docker Compose v2.20+ | **Mandatory** — Runs full containerized stack (Postgres, Express API, Next.js) |
+| **Git** | 2.30+ | **Mandatory** — Repository cloning and version control |
+| *Node.js* (Optional) | `v20.x` or higher (`v24.x` recommended) | *Optional* — Only needed if developing directly on the host machine |
+| *npm* (Optional) | `v10.x` or higher | *Optional* — Only needed if executing tests or linters directly on host |
+
+> [!NOTE]
+> **Zero Host Dependencies**: You do **not** need PostgreSQL installed on your machine, nor do you need `@prisma/cli` or TypeScript installed globally. All migrations, database seeding, TypeScript builds, and services run inside isolated Docker containers.
 
 ---
 
@@ -81,6 +87,8 @@ wayfarer/
 │   │   │   └── utils.ts          # Category metadata, date formatters, cn helper
 │   │   └── types/                # Domain types matching Express backend payloads
 │   ├── public/                   # Static assets & icons
+│   ├── Dockerfile                # Production containerization for Next.js 16
+│   ├── .dockerignore             # Docker build context exclusions
 │   ├── .env.example              # NEXT_PUBLIC_API_URL=http://localhost:5000/api
 │   ├── package.json              # Frontend dependencies and scripts
 │   ├── tsconfig.json             # TypeScript configuration for Next.js
@@ -114,14 +122,17 @@ wayfarer/
 │   │   ├── user.test.ts          # Seeded users retrieval
 │   │   ├── constraints.test.ts   # Database constraints & integrity verification test
 │   │   └── health.test.ts        # API health check integration test
+│   ├── Dockerfile                # Production containerization (migrations + seed + Express)
+│   ├── .dockerignore             # Docker build context exclusions
 │   ├── .env.example              # Backend environment configuration template
 │   ├── package.json              # Backend dependencies and scripts
 │   ├── tsconfig.json             # TypeScript configuration for Node.js
 │   └── vitest.config.ts          # Vitest test runner configuration
 │
-├── docker-compose.yml            # PostgreSQL 17 Alpine database container configuration
+├── docker-compose.yml            # Multi-service orchestration (Postgres, Backend, Frontend)
 ├── .gitignore                    # Monorepo-wide Git ignore rules
-├── package.json                  # Root monorepo convenience scripts
+├── .env.example                  # Root environment configuration template
+├── package.json                  # Root monorepo convenience scripts (install:all, dev, test)
 ├── README.md                     # Comprehensive project documentation
 ├── DECISIONS.md                  # Architectural Decision Records (ADRs)
 └── AI_USAGE.md                   # Transparent log of AI tooling & manual modifications
@@ -190,61 +201,239 @@ All backend endpoints are mounted under `/api` and return standardized JSON enve
 
 ## 7. Local Setup & Execution Instructions
 
-### Step 1: Clone Repository & Configure Environment
+Wayfarer is engineered for **100% portable and reproducible execution**. A developer cloning this repository on a fresh computer needs only **Docker Desktop** and **Git** — no local PostgreSQL server, Node.js runtime, Prisma CLI, or globally installed tools are required.
 
+---
+
+### 7.1. Prerequisites
+
+Ensure the following tools are installed on your machine:
+
+| Tool | Minimum Version | Required For |
+| :--- | :--- | :--- |
+| **Docker Desktop** (or Docker Engine) | Docker 24.x+ / Docker Compose v2.20+ | Running full containerized stack (Postgres, Express API, Next.js) |
+| **Git** | 2.30+ | Repository cloning and version control |
+| *Node.js* (Optional) | `v20.x` or higher (`v24.x` recommended) | Only required if you choose host-based local development |
+| *npm* (Optional) | `v10.x` or higher | Only required if running tests or linters directly on host |
+
+> [!NOTE]
+> **Zero Host Dependencies**: You do **not** need PostgreSQL installed on your machine, nor do you need `@prisma/cli` or TypeScript installed globally. All migrations, database seeding, TypeScript builds, and services run inside isolated Docker containers.
+
+---
+
+### 7.2. Clone Repository
+
+Clone the repository and navigate into the project root directory:
+
+**Linux / macOS (bash):**
 ```bash
-# Clone the repository
 git clone https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem.git
 cd wayfarer-Abenezer-Yirgalem
-
-# Configure Backend Environment
-cp backend/.env.example backend/.env
-
-# Configure Frontend Environment
-cp frontend/.env.example frontend/.env.local
 ```
 
-### Step 2: Database Setup & Operations
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem.git
+cd wayfarer-Abenezer-Yirgalem
+```
+
+---
+
+### 7.3. Configure Environment Variables
+
+Create your root environment configuration file by copying `.env.example`:
+
+**Linux / macOS (bash):**
+```bash
+cp .env.example .env
+```
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+```
+
+#### Environment Variables Reference & Defaults
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `POSTGRES_USER` | `wayfarer` | PostgreSQL superuser username |
+| `POSTGRES_PASSWORD` | `wayfarer_dev` | PostgreSQL development password |
+| `POSTGRES_DB` | `wayfarer` | Primary database name |
+| `POSTGRES_PORT` | `5432` | Host port mapped to Postgres container (change to `5433` if 5432 is occupied) |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:5000/api` | Public REST API base URL consumed by browser client components |
+| `FRONTEND_URL` | `http://localhost:3000` | Allowed frontend origin for backend CORS header policies |
+| `DATABASE_URL` | `postgresql://wayfarer:wayfarer_dev@localhost:5432/wayfarer?schema=public` | Connection URL for host-based development |
+| `SHADOW_DATABASE_URL` | `postgresql://wayfarer:wayfarer_dev@localhost:5432/wayfarer_shadow?schema=public` | Shadow database URL for host-based `prisma migrate dev` |
+
+> [!TIP]
+> The provided `.env.example` defaults work out of the box with zero modifications for Docker Compose.
+
+---
+
+### 7.4. Start Complete Application
+
+Build and start all three services (**PostgreSQL 17**, **Express.js API**, and **Next.js Frontend**) in detached background mode:
 
 ```bash
-# 1. Start PostgreSQL 17 in background via Docker
-docker compose up -d
+docker compose up --build -d
+```
 
-# 2. Run backend migrations and seed data
+#### Automatic Orchestration Order:
+1. **`wayfarer-postgres`**: Initializes PostgreSQL 17 Alpine and performs periodic healthchecks (`pg_isready`).
+2. **`wayfarer-backend`**: Waits for PostgreSQL to become healthy, automatically applies Prisma database migrations (`prisma migrate deploy`), seeds the complete Addis Ababa dataset (`prisma db seed`), and starts the Express REST API on port `5000`.
+3. **`wayfarer-frontend`**: Waits for the backend to become healthy, starts the optimized Next.js App Router server, and listens on port `3000`.
+
+---
+
+### 7.5. Database Migration Instructions
+
+Database migrations are **automatically executed on container startup** via `prisma migrate deploy` inside `wayfarer-backend`.
+
+If you ever want to re-run or inspect migrations manually without installing host tools:
+
+**Via Docker Compose (Recommended):**
+```bash
+docker compose exec backend npx prisma migrate deploy
+```
+
+**Via Host Node.js (Optional):**
+```bash
 npm run db:migrate --prefix backend
+```
+
+---
+
+### 7.6. Database Seeding Instructions
+
+Database seeding is **automatically executed on container startup** via `prisma db seed` inside `wayfarer-backend`. The seed script (`prisma/seed.ts`) is strictly **idempotent** (using upsert operations) and populates:
+- **3 Seeded Users**: `Abenezer`, `Hana`, `Dawit` (for the profile switcher)
+- **10 Addis Ababa Destinations**: National Museum, Holy Trinity Cathedral, 2000 Habesha, Tomoca Coffee, Entoto Natural Park, Unity Park, Ethnological Museum, Red Terror Museum, Fendika Cultural Centre, Bole Medhane Alem Boulevard
+- **20 Real Traveler Reviews**: Ranging from 1 to 5 stars
+- **6 Tour Slots**: Diverse times and capacities
+- **4 Seeded Bookings**: Active reservations for tour slots
+
+If you ever wish to re-seed or reset data manually:
+
+**Via Docker Compose (Recommended):**
+```bash
+docker compose exec backend npx prisma db seed
+```
+
+**Via Host Node.js (Optional):**
+```bash
 npm run db:seed --prefix backend
 ```
 
-### Step 3: Run Applications
+---
 
-In two separate terminals:
+### 7.7. Application URLs
+
+Once the containers are running, access the following endpoints in your browser:
+
+| Service / View | URL | Purpose |
+| :--- | :--- | :--- |
+| **Frontend Web App** | [http://localhost:3000](http://localhost:3000) | Main traveler discovery, filtering, and tour booking interface |
+| **Destination Detail Example** | [http://localhost:3000/places/a0000001-0000-4000-8000-000000000001](http://localhost:3000/places/a0000001-0000-4000-8000-000000000001) | Place detail page with reviews and real-time tour booking |
+| **Backend REST API** | [http://localhost:5000](http://localhost:5000) | Express.js API root service information |
+| **API Health Check** | [http://localhost:5000/api/health](http://localhost:5000/api/health) | API healthcheck endpoint (`{"success": true, "message": "Wayfarer API is running"}`) |
+| **Seeded Users API** | [http://localhost:5000/api/users](http://localhost:5000/api/users) | List of seeded traveler profiles |
+| **Destinations API** | [http://localhost:5000/api/places](http://localhost:5000/api/places) | Filtered place list with Bayesian weighted rating calculation |
+
+---
+
+### 7.8. How to View Logs
+
+Monitor real-time output from all services or a specific container:
 
 ```bash
-# Terminal 1: Start Express.js Backend (port 5000)
-npm run dev:backend
+# View combined live logs from all services
+docker compose logs -f
 
-# Terminal 2: Start Next.js Frontend (port 3000)
-npm run dev:frontend
+# View logs from Express backend only
+docker compose logs -f backend
+
+# View logs from Next.js frontend only
+docker compose logs -f frontend
+
+# View logs from PostgreSQL database only
+docker compose logs -f postgres
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the Wayfarer application.
+---
 
-### Step 4: Verification Commands
+### 7.9. How to Stop the Application
+
+To gracefully stop all running containers:
 
 ```bash
-# Verify backend unit & concurrency tests (40 passing tests)
-npm run test:backend
+# Stop containers while preserving database volume
+docker compose down
 
-# Verify TypeScript compilation (0 errors)
-npm run typecheck:backend
-npm run typecheck:frontend
+# Stop containers and wipe database volumes (clean reset)
+docker compose down -v
+```
 
-# Verify ESLint on frontend (0 warnings / errors)
-npm run lint:frontend
+---
 
-# Verify production builds
-npm run build:backend
-npm run build:frontend
+### 7.10. How to Restart the Application
+
+To restart running containers:
+
+```bash
+# Quick restart without rebuilding images
+docker compose restart
+
+# Full restart with fresh build and clean container recreation
+docker compose down
+docker compose up --build -d
+```
+
+---
+
+### 7.11. Troubleshooting Common Issues
+
+#### 1. Port 5432 is already occupied by a local PostgreSQL service
+If your host computer already runs a local PostgreSQL instance on port `5432`, the container will fail to bind port `5432`.
+- **Solution**: Edit `.env` and set `POSTGRES_PORT=5433` (or any available port). Docker Compose maps `${POSTGRES_PORT:-5432}:5432` automatically, while the backend container communicates internally on port 5432 over Docker's bridge network without conflict.
+
+#### 2. Port 3000 or 5000 is already in use
+- **Linux/macOS**: Find and terminate the process holding the port:
+  ```bash
+  lsof -i :3000 && kill -9 <PID>
+  lsof -i :5000 && kill -9 <PID>
+  ```
+- **Windows (PowerShell)**: Find and terminate the process holding the port:
+  ```powershell
+  Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process -Force
+  Get-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess | Stop-Process -Force
+  ```
+
+#### 3. Docker daemon is not running
+If running `docker compose up` gives `Cannot connect to the Docker daemon`:
+- Ensure **Docker Desktop** is launched and the whale icon indicates "Engine running".
+- Verify connectivity in your terminal with `docker info`.
+
+#### 4. Host-Based Development Fallback (Running without full containers)
+If you prefer running the Next.js frontend and Express backend directly on your host machine with Node.js:
+```bash
+# 1. Install all dependencies across monorepo
+npm run install:all
+
+# 2. Start only PostgreSQL via Docker
+docker compose up -d postgres
+
+# 3. Configure local environment files
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+
+# 4. Run database migrations & seed on host
+npm run db:migrate --prefix backend
+npm run db:seed --prefix backend
+
+# 5. Start dev servers in separate terminals
+npm run dev:backend    # Terminal 1: http://localhost:5000
+npm run dev:frontend   # Terminal 2: http://localhost:3000
 ```
 
 ---
