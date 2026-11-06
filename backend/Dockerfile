@@ -17,9 +17,10 @@ COPY prisma.config.ts ./
 ENV DATABASE_URL="postgresql://wayfarer:wayfarer_dev@postgres:5432/wayfarer?schema=public"
 RUN npx prisma generate
 
-# Copy source code and build TypeScript
-COPY tsconfig.json ./
+# Copy source code, test suite, and build TypeScript
+COPY tsconfig.json vitest.config.ts ./
 COPY src ./src
+COPY tests ./tests
 RUN npm run build
 
 EXPOSE 5000

@@ -307,7 +307,61 @@ npm run db:seed --prefix backend
 
 ---
 
-### 7.7. Application URLs
+### 7.7. How to Run Automated Tests
+
+Wayfarer includes an automated **Vitest test suite of 40 tests across 8 test suites**, rigorously validating Bayesian ranking mathematics, review validation, database check constraints, and high-concurrency race condition protections (20 simultaneous competing bookings).
+
+#### Option A: Run Tests via Docker (Zero Host Dependencies)
+Run the entire test suite directly inside the running backend container without installing Node.js, Vitest, or PostgreSQL on your host machine:
+
+```bash
+# Run all 40 tests across all 8 suites
+docker compose exec backend npm test
+
+# Run parallel booking concurrency stress test (20 simultaneous competing requests)
+docker compose exec backend npx vitest run tests/booking-concurrency.test.ts
+
+# Run Bayesian weighted ranking calculation test
+docker compose exec backend npx vitest run tests/ranking.test.ts
+
+# Run review upsert and validation test
+docker compose exec backend npx vitest run tests/review.test.ts
+
+# Run database integrity and constraint check test
+docker compose exec backend npx vitest run tests/constraints.test.ts
+```
+
+#### Option B: Run Tests via Host Node.js
+If you have Node.js installed on your host machine:
+
+```bash
+# Run all tests using root shortcut
+npm test
+
+# Or directly target backend test runner
+npm run test:backend
+```
+
+#### Full Quality Assurance & Code Integrity Suite (Host)
+```bash
+# Verify backend unit & concurrency tests (40 passing tests)
+npm run test:backend
+
+# Verify TypeScript type checks (0 errors across backend & frontend)
+npm run typecheck:backend
+npm run typecheck:frontend
+
+# Verify ESLint code quality (0 warnings / errors)
+npm run lint:frontend
+
+# Verify production builds
+npm run build:backend
+npm run build:frontend
+```
+
+---
+
+### 7.8. Application URLs
 
 Once the containers are running, access the following endpoints in your browser:
 
@@ -322,7 +376,7 @@ Once the containers are running, access the following endpoints in your browser:
 
 ---
 
-### 7.8. How to View Logs
+### 7.9. How to View Logs
 
 Monitor real-time output from all services or a specific container:
 
@@ -342,7 +396,7 @@ docker compose logs -f postgres
 
 ---
 
-### 7.9. How to Stop the Application
+### 7.10. How to Stop the Application
 
 To gracefully stop all running containers:
 
@@ -356,7 +410,7 @@ docker compose down -v
 
 ---
 
-### 7.10. How to Restart the Application
+### 7.11. How to Restart the Application
 
 To restart running containers:
 
@@ -371,7 +425,7 @@ docker compose up --build -d
 
 ---
 
-### 7.11. Troubleshooting Common Issues
+### 7.12. Troubleshooting Common Issues
 
 #### 1. Port 5432 is already occupied by a local PostgreSQL service
 If your host computer already runs a local PostgreSQL instance on port `5432`, the container will fail to bind port `5432`.
@@ -431,10 +485,17 @@ npm run dev:frontend   # Terminal 2: http://localhost:3000
   where $m = 5$, $v$ is review count, $R$ is place arithmetic mean, and $C$ is system-wide average rating ($3.50$ prior).
 - Places with many positive reviews (e.g. 50 reviews at 4.8, $WR \approx 4.68$) decisively outrank single 5-star outlier reviews ($WR = 3.75$).
 - Toggling "Top Rated" on the homepage directly queries `GET /api/places?sort=top-rated` to demonstrate deterministic ranking.
+- **Run the automated ranking test**:
+  ```bash
+  docker compose exec backend npx vitest run tests/ranking.test.ts
+  ```
 
 ### 3. Concurrency Protection & Overbooking Prevention
 - Tour seat reservations use PostgreSQL pessimistic row-level locking (`SELECT ... FOR UPDATE`) within atomic database transactions (`prisma.$transaction`).
 - When a slot is full or requested seats exceed availability, the API returns `HTTP 409 Conflict` with a user-friendly message.
 - True PostgreSQL parallel concurrency is validated via `backend/tests/booking-concurrency.test.ts` (20 simultaneous competing requests for 2 remaining seats yield exactly 2 successes and 18 conflict rejections, with zero overbooking).
-
+- **Run the parallel concurrency stress test**:
+  ```bash
+  docker compose exec backend npx vitest run tests/booking-concurrency.test.ts
+  ```
 
