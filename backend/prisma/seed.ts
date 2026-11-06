@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import prisma from '../src/lib/prisma';
 import { PlaceCategory } from '@prisma/client';
 
@@ -291,74 +292,257 @@ export const REVIEWS = [
   },
 ];
 
-export const TOUR_SLOTS = [
-  {
+// Deterministic UUID generator from seed string
+export function deterministicUuid(seed: string): string {
+  const hash = crypto.createHash('sha256').update(seed).digest('hex');
+  return (
+    hash.slice(0, 8) +
+    '-' +
+    hash.slice(8, 12) +
+    '-4' +
+    hash.slice(13, 16) +
+    '-a' +
+    hash.slice(17, 20) +
+    '-' +
+    hash.slice(20, 32)
+  );
+}
+
+// Legacy slot definitions preserved for backward compatibility with existing tests
+const LEGACY_SLOT_DEFS: Record<string, { id: string; startsAt: Date; capacity: number }> = {
+  'a0000001-0000-4000-8000-000000000001-0': {
     id: 'b0000001-0000-4000-8000-000000000001',
-    placeId: 'a0000001-0000-4000-8000-000000000001', // National Museum
     startsAt: new Date('2027-01-15T09:30:00Z'),
     capacity: 15,
   },
-  {
+  'a0000001-0000-4000-8000-000000000001-1': {
     id: 'b0000001-0000-4000-8000-000000000002',
-    placeId: 'a0000001-0000-4000-8000-000000000001', // National Museum
     startsAt: new Date('2027-01-16T14:00:00Z'),
     capacity: 12,
   },
-  {
+  'a0000001-0000-4000-8000-000000000002-0': {
     id: 'b0000001-0000-4000-8000-000000000003',
-    placeId: 'a0000001-0000-4000-8000-000000000002', // Holy Trinity Cathedral
     startsAt: new Date('2027-01-18T10:00:00Z'),
     capacity: 20,
   },
-  {
+  'a0000001-0000-4000-8000-000000000005-0': {
     id: 'b0000001-0000-4000-8000-000000000004',
-    placeId: 'a0000001-0000-4000-8000-000000000005', // Entoto Natural Park
     startsAt: new Date('2027-01-20T08:00:00Z'),
     capacity: 10,
   },
-  {
+  'a0000001-0000-4000-8000-000000000006-0': {
     id: 'b0000001-0000-4000-8000-000000000005',
-    placeId: 'a0000001-0000-4000-8000-000000000006', // Unity Park
     startsAt: new Date('2027-01-22T10:30:00Z'),
     capacity: 25,
   },
-  {
+  'a0000001-0000-4000-8000-000000000007-0': {
     id: 'b0000001-0000-4000-8000-000000000006',
-    placeId: 'a0000001-0000-4000-8000-000000000007', // Ethnological Museum
     startsAt: new Date('2027-01-25T11:00:00Z'),
     capacity: 15,
   },
-];
+};
 
-export const BOOKINGS = [
-  // Tour Slot 1 (capacity 15): 2 bookings totaling 5 seats
-  {
-    id: 'c0000001-0000-4000-8000-000000000001',
-    slotId: 'b0000001-0000-4000-8000-000000000001',
-    userId: '11111111-1111-4111-8111-111111111111', // Abenezer
-    seats: 2,
-  },
-  {
-    id: 'c0000001-0000-4000-8000-000000000002',
-    slotId: 'b0000001-0000-4000-8000-000000000001',
-    userId: '22222222-2222-4222-8222-222222222222', // Hana
-    seats: 3,
-  },
-  // Tour Slot 3 (capacity 20): 1 booking of 4 seats
-  {
-    id: 'c0000001-0000-4000-8000-000000000003',
-    slotId: 'b0000001-0000-4000-8000-000000000003',
-    userId: '33333333-3333-4333-8333-333333333333', // Dawit
-    seats: 4,
-  },
-  // Tour Slot 4 (capacity 10): 1 booking of 2 seats
-  {
-    id: 'c0000001-0000-4000-8000-000000000004',
-    slotId: 'b0000001-0000-4000-8000-000000000004',
-    userId: '11111111-1111-4111-8111-111111111111', // Abenezer
-    seats: 2,
-  },
-];
+// Legacy booking IDs preserved for backward compatibility
+const LEGACY_BOOKING_MAP: Record<string, string> = {
+  'b0000001-0000-4000-8000-000000000001-11111111-1111-4111-8111-111111111111':
+    'c0000001-0000-4000-8000-000000000001',
+  'b0000001-0000-4000-8000-000000000001-22222222-2222-4222-8222-222222222222':
+    'c0000001-0000-4000-8000-000000000002',
+  'b0000001-0000-4000-8000-000000000003-33333333-3333-4333-8333-333333333333':
+    'c0000001-0000-4000-8000-000000000003',
+  'b0000001-0000-4000-8000-000000000004-11111111-1111-4111-8111-111111111111':
+    'c0000001-0000-4000-8000-000000000004',
+};
+
+export interface TourSlotSeedData {
+  id: string;
+  placeId: string;
+  startsAt: Date;
+  capacity: number;
+}
+
+export interface BookingSeedData {
+  id: string;
+  slotId: string;
+  userId: string;
+  seats: number;
+}
+
+interface ScheduleTemplate {
+  monthOffset: number; // 0 = Jan 2027, 1 = Feb 2027
+  baseDay: number;
+  hour: number;
+  minute: number;
+  capacity: number;
+}
+
+// Realistic schedule templates tailored to each destination category
+const CATEGORY_SCHEDULE_TEMPLATES: Record<PlaceCategory, ScheduleTemplate[]> = {
+  HISTORY: [
+    { monthOffset: 0, baseDay: 15, hour: 9, minute: 30, capacity: 15 },
+    { monthOffset: 0, baseDay: 23, hour: 14, minute: 0, capacity: 12 },
+    { monthOffset: 1, baseDay: 6, hour: 10, minute: 30, capacity: 18 },
+  ],
+  FOOD: [
+    { monthOffset: 0, baseDay: 17, hour: 12, minute: 30, capacity: 14 },
+    { monthOffset: 0, baseDay: 25, hour: 18, minute: 30, capacity: 16 },
+    { monthOffset: 1, baseDay: 9, hour: 19, minute: 0, capacity: 12 },
+  ],
+  NATURE: [
+    { monthOffset: 0, baseDay: 18, hour: 8, minute: 30, capacity: 10 },
+    { monthOffset: 0, baseDay: 27, hour: 11, minute: 0, capacity: 25 },
+    { monthOffset: 1, baseDay: 12, hour: 14, minute: 30, capacity: 15 },
+  ],
+  CULTURE: [
+    { monthOffset: 0, baseDay: 19, hour: 10, minute: 0, capacity: 16 },
+    { monthOffset: 0, baseDay: 28, hour: 14, minute: 30, capacity: 18 },
+    { monthOffset: 1, baseDay: 14, hour: 11, minute: 0, capacity: 15 },
+  ],
+  ENTERTAINMENT: [
+    { monthOffset: 0, baseDay: 20, hour: 16, minute: 30, capacity: 15 },
+    { monthOffset: 0, baseDay: 29, hour: 19, minute: 30, capacity: 12 },
+    { monthOffset: 1, baseDay: 16, hour: 20, minute: 0, capacity: 15 },
+  ],
+};
+
+/**
+ * Dynamically generates multiple upcoming tour slots for every destination.
+ * Uses real place records and IDs, automatically adapting to all places in the database.
+ */
+export function generateTourSlotsForPlaces(
+  places: Array<{ id: string; category: PlaceCategory; name: string }>
+): TourSlotSeedData[] {
+  const slots: TourSlotSeedData[] = [];
+
+  places.forEach((place, placeIndex) => {
+    const templates = CATEGORY_SCHEDULE_TEMPLATES[place.category] || CATEGORY_SCHEDULE_TEMPLATES.HISTORY;
+
+    templates.forEach((tmpl, slotIndex) => {
+      const legacyKey = `${place.id}-${slotIndex}`;
+      if (LEGACY_SLOT_DEFS[legacyKey]) {
+        slots.push({
+          id: LEGACY_SLOT_DEFS[legacyKey].id,
+          placeId: place.id,
+          startsAt: LEGACY_SLOT_DEFS[legacyKey].startsAt,
+          capacity: LEGACY_SLOT_DEFS[legacyKey].capacity,
+        });
+        return;
+      }
+
+      // Generate deterministic slot ID
+      const slotId = deterministicUuid(`wayfarer-slot-${place.id}-${slotIndex}`);
+
+      // Stagger dates across destinations so every destination has its own unique timetable
+      const dayStagger = (placeIndex * 2) % 5;
+      const scheduledDay = tmpl.baseDay + dayStagger;
+      const startsAt = new Date(
+        Date.UTC(2027, tmpl.monthOffset, scheduledDay, tmpl.hour, tmpl.minute, 0)
+      );
+
+      // Special demonstration: for Bole Medhane Alem Boulevard Slot 2, capacity 5 will be fully booked (Sold Out)
+      let capacity = tmpl.capacity;
+      if (place.name.includes('Bole Medhane Alem') && slotIndex === 2) {
+        capacity = 5;
+      }
+
+      slots.push({
+        id: slotId,
+        placeId: place.id,
+        startsAt,
+        capacity,
+      });
+    });
+  });
+
+  return slots;
+}
+
+/**
+ * Dynamically generates realistic bookings for tour slots across destinations.
+ * Demonstrates remaining seat calculations, full availability, and sold-out states.
+ */
+export function generateBookingsForSlots(slots: TourSlotSeedData[]): BookingSeedData[] {
+  const bookings: BookingSeedData[] = [];
+
+  // Group slots by placeId
+  const slotsByPlace: Record<string, TourSlotSeedData[]> = {};
+  for (const slot of slots) {
+    if (!slotsByPlace[slot.placeId]) {
+      slotsByPlace[slot.placeId] = [];
+    }
+    slotsByPlace[slot.placeId].push(slot);
+  }
+
+  // Pre-seed diverse booking scenarios for each destination
+  Object.keys(slotsByPlace).forEach((placeId, pIdx) => {
+    const placeSlots = slotsByPlace[placeId];
+    if (placeSlots.length === 0) return;
+
+    const slot0 = placeSlots[0];
+
+    // Determine booking distribution for Slot 0 of this destination
+    switch (pIdx % 6) {
+      case 0:
+        // Abenezer (2) & Hana (3)
+        addBooking(bookings, slot0.id, USERS[0].id, 2);
+        addBooking(bookings, slot0.id, USERS[1].id, 3);
+        break;
+      case 1:
+        // Dawit (4)
+        addBooking(bookings, slot0.id, USERS[2].id, 4);
+        break;
+      case 2:
+        // Hana (3) & Dawit (3)
+        addBooking(bookings, slot0.id, USERS[1].id, 3);
+        addBooking(bookings, slot0.id, USERS[2].id, 3);
+        break;
+      case 3:
+        // Abenezer (2)
+        addBooking(bookings, slot0.id, USERS[0].id, 2);
+        break;
+      case 4:
+        // Hana (4)
+        addBooking(bookings, slot0.id, USERS[1].id, 4);
+        break;
+      case 5:
+        // Dawit (3) & Abenezer (2)
+        addBooking(bookings, slot0.id, USERS[2].id, 3);
+        addBooking(bookings, slot0.id, USERS[0].id, 2);
+        break;
+    }
+
+    // Special demonstration: fully book Slot 2 on the last destination (capacity 5 booked by Hana 2 + Dawit 3)
+    if (placeSlots.length >= 3 && pIdx === Object.keys(slotsByPlace).length - 1) {
+      const soldOutSlot = placeSlots[2];
+      if (soldOutSlot.capacity === 5) {
+        addBooking(bookings, soldOutSlot.id, USERS[1].id, 2);
+        addBooking(bookings, soldOutSlot.id, USERS[2].id, 3);
+      }
+    }
+  });
+
+  return bookings;
+}
+
+function addBooking(
+  bookings: BookingSeedData[],
+  slotId: string,
+  userId: string,
+  seats: number
+) {
+  const legacyKey = `${slotId}-${userId}`;
+  const id = LEGACY_BOOKING_MAP[legacyKey] || deterministicUuid(`wayfarer-booking-${slotId}-${userId}`);
+  bookings.push({
+    id,
+    slotId,
+    userId,
+    seats,
+  });
+}
+
+// Initial exported lists based on the 10 core destinations
+export const TOUR_SLOTS = generateTourSlotsForPlaces(PLACES);
+export const BOOKINGS = generateBookingsForSlots(TOUR_SLOTS);
 
 async function main() {
   console.log('Seeding Wayfarer database (Addis Ababa, Ethiopia)...');
@@ -383,17 +567,28 @@ async function main() {
     });
   }
 
-  // 3. Seed Tour Slots (Upsert for idempotency)
-  console.log(`Seeding ${TOUR_SLOTS.length} tour slots...`);
-  for (const slot of TOUR_SLOTS) {
+  // 3. Retrieve actual destination records from database (dynamic & automatic)
+  const allDbPlaces = await prisma.place.findMany({
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, category: true, name: true },
+  });
+  console.log(`Found ${allDbPlaces.length} destination records in database.`);
+
+  // 4. Generate & Seed Tour Slots for EVERY destination
+  const allTourSlots = generateTourSlotsForPlaces(allDbPlaces);
+  console.log(`Seeding ${allTourSlots.length} tour slots across ${allDbPlaces.length} destinations...`);
+  for (const slot of allTourSlots) {
     await prisma.tourSlot.upsert({
       where: { id: slot.id },
-      update: slot,
+      update: {
+        startsAt: slot.startsAt,
+        capacity: slot.capacity,
+      },
       create: slot,
     });
   }
 
-  // 4. Seed Reviews (Upsert on composite unique key [placeId, userId])
+  // 5. Seed Reviews (Upsert on composite unique key [placeId, userId])
   console.log(`Seeding ${REVIEWS.length} reviews...`);
   for (const review of REVIEWS) {
     await prisma.review.upsert({
@@ -411,9 +606,10 @@ async function main() {
     });
   }
 
-  // 5. Seed Bookings (Upsert on composite unique key [slotId, userId])
-  console.log(`Seeding ${BOOKINGS.length} bookings...`);
-  for (const booking of BOOKINGS) {
+  // 6. Generate & Seed Bookings for Tour Slots
+  const allBookings = generateBookingsForSlots(allTourSlots);
+  console.log(`Seeding ${allBookings.length} bookings...`);
+  for (const booking of allBookings) {
     await prisma.booking.upsert({
       where: {
         slotId_userId: {
@@ -430,10 +626,10 @@ async function main() {
 
   console.log('Database seeding complete:');
   console.log(`- ${USERS.length} users`);
-  console.log(`- ${PLACES.length} places`);
+  console.log(`- ${allDbPlaces.length} places`);
   console.log(`- ${REVIEWS.length} reviews`);
-  console.log(`- ${TOUR_SLOTS.length} tour slots`);
-  console.log(`- ${BOOKINGS.length} bookings`);
+  console.log(`- ${allTourSlots.length} tour slots (${allDbPlaces.length} destinations covered)`);
+  console.log(`- ${allBookings.length} bookings`);
 }
 
 main()
