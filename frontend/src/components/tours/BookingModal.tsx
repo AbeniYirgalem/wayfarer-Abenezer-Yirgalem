@@ -8,7 +8,6 @@ import {
   CalendarIcon,
   ClockIcon,
   XIcon,
-  CheckIcon,
   AlertCircleIcon,
   ShieldCheckIcon,
 } from '../ui/Icons';
@@ -36,7 +35,6 @@ export function BookingModal({
   const [seats, setSeats] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successResult, setSuccessResult] = useState<BookingResult | null>(null);
 
   if (!isOpen) return null;
 
@@ -64,8 +62,8 @@ export function BookingModal({
     setIsSubmitting(true);
     try {
       const result = await api.createBooking(slot.id, { seats }, currentUser.id);
-      setSuccessResult(result);
       onBookingSuccess(result);
+      onClose();
     } catch (err: unknown) {
       if (err instanceof ApiClientError) {
         if (err.status === 409) {
@@ -101,166 +99,131 @@ export function BookingModal({
           <XIcon className="w-5 h-5" />
         </button>
 
-        {successResult ? (
-          /* Success Screen */
-          <div className="text-center py-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-100 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto mb-4">
-              <CheckIcon className="w-7 h-7" />
+        {/* Booking Form */}
+        <div>
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#163D32] mb-1">
+              <ShieldCheckIcon className="w-3.5 h-3.5 text-[#163D32]" />
+              Guaranteed Availability
             </div>
-            <h3 className="font-serif text-2xl font-bold text-[#252A27] mb-2">
-              Booking Confirmed!
+            <h3 id="booking-modal-title" className="font-serif text-2xl font-bold text-[#252A27]">
+              Reserve Tour Seats
             </h3>
-            <p className="text-sm text-[#777D78] leading-relaxed max-w-md mx-auto mb-6">
-              You have successfully reserved{' '}
-              <strong className="text-[#252A27] font-semibold">
-                {successResult.seats} {successResult.seats === 1 ? 'seat' : 'seats'}
-              </strong>{' '}
-              for <strong className="text-[#252A27] font-semibold">{placeName}</strong> on{' '}
-              {formatDate(slot.startsAt)} at {formatTime(slot.startsAt)}.
+            <p className="text-xs text-[#777D78] mt-1">
+              {placeName}
             </p>
-
-            <div className="p-4 rounded-2xl bg-[#F8F7F3] border border-[#EDE9DF] text-xs text-[#777D78] max-w-xs mx-auto mb-6 space-y-1">
-              <div className="flex justify-between">
-                <span>Confirmation ID:</span>
-                <span className="font-mono text-[#252A27]">{successResult.bookingId.slice(0, 8)}...</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Remaining Seats:</span>
-                <span className="font-semibold text-[#163D32]">{successResult.remainingSeats} left</span>
-              </div>
-            </div>
-
-            <Button variant="primary" size="md" onClick={onClose} className="w-full">
-              Done
-            </Button>
           </div>
-        ) : (
-          /* Booking Form */
-          <div>
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#163D32] mb-1">
-                <ShieldCheckIcon className="w-3.5 h-3.5 text-[#163D32]" />
-                Guaranteed Availability
-              </div>
-              <h3 id="booking-modal-title" className="font-serif text-2xl font-bold text-[#252A27]">
-                Reserve Tour Seats
-              </h3>
-              <p className="text-xs text-[#777D78] mt-1">
-                {placeName}
-              </p>
+
+          {/* Tour Slot Details Banner */}
+          <div className="p-4 rounded-2xl bg-[#F8F7F3] border border-[#EDE9DF] mb-6 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[#252A27] font-medium">
+                <CalendarIcon className="w-4 h-4 text-[#163D32]" />
+                <span>{formatDate(slot.startsAt)}</span>
+              </span>
+              <span className="flex items-center gap-1 text-[#777D78]">
+                <ClockIcon className="w-3.5 h-3.5" />
+                <span>{formatTime(slot.startsAt)}</span>
+              </span>
             </div>
 
-            {/* Tour Slot Details Banner */}
-            <div className="p-4 rounded-2xl bg-[#F8F7F3] border border-[#EDE9DF] mb-6 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-[#252A27] font-medium">
-                  <CalendarIcon className="w-4 h-4 text-[#163D32]" />
-                  <span>{formatDate(slot.startsAt)}</span>
-                </span>
-                <span className="flex items-center gap-1 text-[#777D78]">
-                  <ClockIcon className="w-3.5 h-3.5" />
-                  <span>{formatTime(slot.startsAt)}</span>
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-[#EDE9DF]">
-                <span className="text-[#777D78]">Remaining Capacity:</span>
-                <span className="font-semibold text-[#163D32]">
-                  {slot.availableSeats} of {slot.capacity} seats available
-                </span>
-              </div>
+            <div className="flex items-center justify-between pt-2 border-t border-[#EDE9DF]">
+              <span className="text-[#777D78]">Remaining Capacity:</span>
+              <span className="font-semibold text-[#163D32]">
+                {slot.availableSeats} of {slot.capacity} seats available
+              </span>
             </div>
+          </div>
 
-            {/* Current Traveler Profile */}
-            <div className="mb-6 p-3.5 rounded-2xl bg-white border border-[#EDE9DF] flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-[#163D32] text-white flex items-center justify-center font-bold text-xs">
-                  {currentUser ? currentUser.name.charAt(0).toUpperCase() : '?'}
-                </div>
-                <div>
-                  <p className="text-[10px] text-[#777D78] uppercase tracking-wider font-semibold">
-                    Booking Passenger
-                  </p>
-                  <p className="font-semibold text-[#252A27]">
-                    {currentUser ? currentUser.name : 'No traveler selected'}
-                  </p>
-                </div>
+          {/* Current Traveler Profile */}
+          <div className="mb-6 p-3.5 rounded-2xl bg-white border border-[#EDE9DF] flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-[#163D32] text-white flex items-center justify-center font-bold text-xs">
+                {currentUser ? currentUser.name.charAt(0).toUpperCase() : '?'}
               </div>
-              {!currentUser && (
-                <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                  Select profile in navbar
-                </span>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {errorMessage && (
-              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-start gap-2.5">
-                <AlertCircleIcon className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">{errorMessage}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleBooking} className="space-y-6">
-              {/* Seat Count Selector */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#777D78] mb-2">
-                  Number of Seats
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center border border-[#D6D2C4] rounded-xl overflow-hidden bg-white">
-                    <button
-                      type="button"
-                      disabled={seats <= 1 || isSubmitting}
-                      onClick={() => setSeats((s) => Math.max(1, s - 1))}
-                      className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-[#F8F7F3] disabled:opacity-40 transition-colors"
-                      aria-label="Decrease seat count"
-                    >
-                      −
-                    </button>
-                    <span className="w-12 text-center text-sm font-bold text-[#252A27]">
-                      {seats}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={seats >= maxSelectable || isSubmitting}
-                      onClick={() => setSeats((s) => Math.min(maxSelectable, s + 1))}
-                      className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-[#F8F7F3] disabled:opacity-40 transition-colors"
-                      aria-label="Increase seat count"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <span className="text-xs text-[#777D78]">
-                    {seats === 1 ? '1 passenger' : `${seats} passengers`}
-                  </span>
-                </div>
+                <p className="text-[10px] text-[#777D78] uppercase tracking-wider font-semibold">
+                  Booking Passenger
+                </p>
+                <p className="font-semibold text-[#252A27]">
+                  {currentUser ? currentUser.name : 'No traveler selected'}
+                </p>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="md"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  disabled={!currentUser || isSubmitting || slot.availableSeats <= 0}
-                  isLoading={isSubmitting}
-                >
-                  Confirm Reservation
-                </Button>
-              </div>
-            </form>
+            </div>
+            {!currentUser && (
+              <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                Select profile in navbar
+              </span>
+            )}
           </div>
-        )}
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-start gap-2.5">
+              <AlertCircleIcon className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">{errorMessage}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleBooking} className="space-y-6">
+            {/* Seat Count Selector */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#777D78] mb-2">
+                Number of Seats
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-[#D6D2C4] rounded-xl overflow-hidden bg-white">
+                  <button
+                    type="button"
+                    disabled={seats <= 1 || isSubmitting}
+                    onClick={() => setSeats((s) => Math.max(1, s - 1))}
+                    className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-[#F8F7F3] disabled:opacity-40 transition-colors"
+                    aria-label="Decrease seat count"
+                  >
+                    −
+                  </button>
+                  <span className="w-12 text-center text-sm font-bold text-[#252A27]">
+                    {seats}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={seats >= maxSelectable || isSubmitting}
+                    onClick={() => setSeats((s) => Math.min(maxSelectable, s + 1))}
+                    className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-[#F8F7F3] disabled:opacity-40 transition-colors"
+                    aria-label="Increase seat count"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-xs text-[#777D78]">
+                  {seats === 1 ? '1 passenger' : `${seats} passengers`}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                disabled={!currentUser || isSubmitting || slot.availableSeats <= 0}
+                isLoading={isSubmitting}
+              >
+                Confirm Reservation
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

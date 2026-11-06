@@ -48,7 +48,7 @@ model Review {
   placeId   String
   userId    String
   rating    Int
-  body      String   @db.VarChar(500)
+  body      String?  @db.VarChar(500)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

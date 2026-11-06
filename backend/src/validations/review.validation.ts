@@ -7,10 +7,15 @@ export const createReviewBodySchema = z.object({
     .min(1, 'Rating must be at least 1')
     .max(5, 'Rating cannot exceed 5'),
   body: z
-    .string({ message: 'Review body is required and must be a string' })
-    .trim()
-    .min(1, 'Review body cannot be empty')
-    .max(500, 'Review body cannot exceed 500 characters'),
+    .string({ message: 'Review body must be a string' })
+    .max(500, 'Review body cannot exceed 500 characters')
+    .optional()
+    .nullable()
+    .transform((val) => {
+      if (!val) return null;
+      const trimmed = val.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }),
 });
 
 export const actingUserHeaderSchema = z.object({

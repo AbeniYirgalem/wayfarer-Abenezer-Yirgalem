@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, ApiClientError } from '../../../lib/api';
-import type { PlaceDetail, PlaceDetailTourSlot, ReviewSubmissionResult } from '../../../types';
+import type { PlaceDetail, PlaceDetailTourSlot, ReviewSubmissionResult, BookingResult } from '../../../types';
 import { PlaceDetailsHeader } from '../../../components/places/PlaceDetailsHeader';
 import { TourSlotList } from '../../../components/tours/TourSlotList';
 import { BookingModal } from '../../../components/tours/BookingModal';
@@ -12,6 +12,7 @@ import { ReviewForm } from '../../../components/reviews/ReviewForm';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { Button } from '../../../components/ui/Button';
+import { Toast } from '../../../components/ui/Toast';
 import { useUser } from '../../../context/UserContext';
 import {
   CalendarIcon,
@@ -34,6 +35,22 @@ export default function PlaceDetailsPage() {
 
   // Selected tour slot for booking modal
   const [selectedSlot, setSelectedSlot] = useState<PlaceDetailTourSlot | null>(null);
+
+  // Floating toast notification state
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+    description?: string;
+  } | null>(null);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Fetch destination with async callback pattern
   useEffect(() => {
@@ -112,8 +129,34 @@ export default function PlaceDetailsPage() {
   };
 
   // Callback when tour booking succeeds
-  const handleBookingSuccess = () => {
-    // Re-fetch fresh place data to refresh slot capacity and availability dynamically
+  const handleBookingSuccess = (result: BookingResult, bookedSlot: PlaceDetailTourSlot) => {
+    // 1. Immediately update available seats in place state
+    if (place) {
+      setPlace({
+        ...place,
+        tourSlots: place.tourSlots.map((s) =>
+          s.id === bookedSlot.id
+            ? {
+                ...s,
+                availableSeats: result.remainingSeats,
+                totalBookedSeats: s.capacity - result.remainingSeats,
+              }
+            : s
+        ),
+      });
+    }
+
+    // 2. Close modal immediately
+    setSelectedSlot(null);
+
+    // 3. Show clear booking success toast notification
+    setToast({
+      type: 'success',
+      message: 'Booking Confirmed!',
+      description: `Successfully reserved ${result.seats} ${result.seats === 1 ? 'seat' : 'seats'} for ${place?.name || 'this destination'}. Remaining seats: ${result.remainingSeats}.`,
+    });
+
+    // 4. Background refresh to ensure complete synchronization with backend
     handleRetry();
   };
 
@@ -256,8 +299,22 @@ export default function PlaceDetailsPage() {
           placeName={place.name}
           isOpen={Boolean(selectedSlot)}
           onClose={() => setSelectedSlot(null)}
-          onBookingSuccess={handleBookingSuccess}
+          onBookingSuccess={(result) => handleBookingSuccess(result, selectedSlot)}
         />
+      )}
+
+      {/* Floating Notification Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300 max-w-sm sm:max-w-md w-full px-4 sm:px-0 pointer-events-none">
+          <div className="pointer-events-auto">
+            <Toast
+              type={toast.type}
+              message={toast.message}
+              description={toast.description}
+              onClose={() => setToast(null)}
+            />
+          </div>
+        </div>
       )}
     </main>
   );

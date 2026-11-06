@@ -60,10 +60,12 @@ export function ReviewCard({ review, isCurrentUser = false }: ReviewCardProps) {
         </div>
       </div>
 
-      {/* Review Body */}
-      <p className="text-sm text-[#252A27] leading-relaxed whitespace-pre-line">
-        {review.body}
-      </p>
+      {/* Review Body (optional) */}
+      {review.body && review.body.trim().length > 0 ? (
+        <p className="text-sm text-[#252A27] leading-relaxed whitespace-pre-line">
+          {review.body}
+        </p>
+      ) : null}
     </article>
   );
 }

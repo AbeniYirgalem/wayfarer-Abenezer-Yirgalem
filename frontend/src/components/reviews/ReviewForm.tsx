@@ -48,13 +48,9 @@ export function ReviewForm({
     }
 
     const trimmedBody = body.trim();
-    if (!trimmedBody) {
-      setValidationError('Review body cannot be empty.');
-      return;
-    }
 
     if (trimmedBody.length > 500) {
-      setValidationError('Review body must be 500 characters or less.');
+      setValidationError('Review feedback must be 500 characters or less.');
       return;
     }
 
@@ -69,7 +65,7 @@ export function ReviewForm({
         placeId,
         {
           rating,
-          body: trimmedBody,
+          body: trimmedBody.length > 0 ? trimmedBody : null,
         },
         currentUser.id
       );
@@ -204,7 +200,7 @@ export function ReviewForm({
               htmlFor="review-body"
               className="block text-xs font-semibold uppercase tracking-wider text-[#777D78]"
             >
-              Your Honest Feedback
+              Your Feedback <span className="font-normal lowercase text-[#777D78]/70">(optional)</span>
             </label>
             <span
               className={cn(
@@ -221,7 +217,7 @@ export function ReviewForm({
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={4}
-            placeholder="What was remarkable about this place? How were the facilities, atmosphere, and guidance?"
+            placeholder="Share details of your experience (optional)..."
             className={cn(
               'w-full px-3.5 py-2.5 text-sm bg-[#F8F7F3] border rounded-xl text-[#252A27] placeholder:text-[#777D78]/60 transition-colors resize-y min-h-[100px]',
               'focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#163D32]/20 focus:border-[#163D32]',

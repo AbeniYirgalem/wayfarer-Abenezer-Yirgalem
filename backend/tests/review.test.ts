@@ -141,7 +141,7 @@ describe('Review API & Business Logic (POST /api/places/:id/reviews)', () => {
     expect(resDecimal.body.success).toBe(false);
   });
 
-  it('rejects empty or whitespace-only review body', async () => {
+  it('accepts empty or whitespace-only review body and saves null body', async () => {
     const res = await request(app)
       .post(`/api/places/${testPlaceId}/reviews`)
       .set('X-User-Id', testUserId)
@@ -150,8 +150,24 @@ describe('Review API & Business Logic (POST /api/places/:id/reviews)', () => {
         body: '   ',
       });
 
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.review.rating).toBe(5);
+    expect(res.body.data.review.body).toBeNull();
+  });
+
+  it('accepts review without body field and saves rating successfully', async () => {
+    const res = await request(app)
+      .post(`/api/places/${testPlaceId}/reviews`)
+      .set('X-User-Id', testUserId)
+      .send({
+        rating: 4,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.review.rating).toBe(4);
+    expect(res.body.data.review.body).toBeNull();
   });
 
   it('rejects review body exceeding 500 characters', async () => {

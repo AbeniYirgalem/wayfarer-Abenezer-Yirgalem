@@ -136,7 +136,7 @@ export const api = {
    */
   async submitReview(
     placeId: string,
-    payload: { rating: number; body: string },
+    payload: { rating: number; body?: string | null },
     userId: string
   ): Promise<ReviewSubmissionResult> {
     return request<ReviewSubmissionResult>(`/places/${placeId}/reviews`, {

@@ -26,7 +26,7 @@ export interface PlaceDetailReview {
   placeId: string;
   userId: string;
   rating: number;
-  body: string;
+  body: string | null;
   createdAt: string;
   updatedAt: string;
   user: {

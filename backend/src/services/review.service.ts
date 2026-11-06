@@ -7,7 +7,7 @@ export interface CreateReviewDTO {
   placeId: string;
   userId: string;
   rating: number;
-  body: string;
+  body?: string | null;
 }
 
 export interface ReviewSubmissionResult {
@@ -17,7 +17,7 @@ export interface ReviewSubmissionResult {
     placeId: string;
     userId: string;
     rating: number;
-    body: string;
+    body: string | null;
     createdAt: Date;
     updatedAt: Date;
     user: {
@@ -67,6 +67,8 @@ export class ReviewService {
     const isNew = !existing;
 
     // 4. Upsert review
+    const normalizedBody = body && body.trim() ? body.trim() : null;
+
     const review = await prisma.review.upsert({
       where: {
         placeId_userId: {
@@ -78,11 +80,11 @@ export class ReviewService {
         placeId,
         userId,
         rating,
-        body,
+        body: normalizedBody,
       },
       update: {
         rating,
-        body,
+        body: normalizedBody,
       },
       include: {
         user: {
