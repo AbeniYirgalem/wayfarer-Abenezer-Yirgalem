@@ -4,26 +4,6 @@
 
 ---
 
-## ⚡ 3-Command Quickstart
-
-Run the entire application locally in three commands with only **Docker Desktop** and **Git** installed:
-
-```bash
-# 1. Clone repository
-git clone https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem.git
-cd wayfarer-Abenezer-Yirgalem
-
-# 2. Copy environment template (works out of the box)
-cp .env.example .env    # Windows PowerShell: Copy-Item .env.example .env
-
-# 3. Start complete application (PostgreSQL + Express Backend + Next.js Frontend)
-docker compose up --build -d
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser. All database migrations and seed data run automatically on startup!
-
----
-
 ## 1. Project Overview & Value Proposition
 
 Wayfarer offers travelers an authentic, reliable platform to:
@@ -457,7 +437,4 @@ npm run dev:frontend   # Terminal 2: http://localhost:3000
 - When a slot is full or requested seats exceed availability, the API returns `HTTP 409 Conflict` with a user-friendly message.
 - True PostgreSQL parallel concurrency is validated via `backend/tests/booking-concurrency.test.ts` (20 simultaneous competing requests for 2 remaining seats yield exactly 2 successes and 18 conflict rejections, with zero overbooking).
 
-### 4. GitHub Submission & Access
-- Repository: [wayfarer-Abenezer-Yirgalem](https://github.com/AbeniYirgalem/wayfarer-Abenezer-Yirgalem)
-- Visibility: **Public** (verified accessible without login).
-- Evaluator access: **`KenaGetachew`** has immediate read access. If collaborator invitation is preferred, navigate to *Settings > Collaborators > Add people* and enter `KenaGetachew`.
+
